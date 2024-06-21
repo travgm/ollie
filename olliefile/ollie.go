@@ -20,10 +20,17 @@ func ONewFile(name string) *Ollie {
 	return &Ollie{Name: name, WordCount: 0, LineCount: 0, Saved: false, FileHandle: nil}
 }
 
-func (o *Ollie) OWriteFile() (b, error) {
-	bytes, err := o.FileHandle.WriteString(o.Lines)
-	if err != nil {
-		return err
+func (o *Ollie) OWriteFile() (int, error) {
+	if o.FileHandle == nil {
+		return 0, fmt.Errorf("Error: File handle null")
+	}
+	bytes := 0
+	for _, s := range o.Lines {
+		bw, err := fmt.Fprintln(o.FileHandle, s)
+		if err != nil {
+			return 0, err
+		}
+		bytes += bw
 	}
 	o.Saved = true
 	o.LastSaved = time.Now()
@@ -39,5 +46,6 @@ func (o *Ollie) OCreateFile() error {
 	if err != nil {
 		return err
 	}
+	o.FileHandle = f
 	return nil
 }
