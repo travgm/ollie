@@ -1,4 +1,4 @@
-package olliefile
+package ollie
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-type Ollie struct {
+type File struct {
 	Name       string
 	FileHandle *os.File
 	Lines      []string
@@ -16,33 +16,29 @@ type Ollie struct {
 	LastSaved  time.Time
 }
 
-func ONewFile(name string) *Ollie {
-	return &Ollie{Name: name, WordCount: 0, LineCount: 0, Saved: false, FileHandle: nil}
+func (o *File) String() string {
+	return fmt.Sprintf("File: %s\nLine Count: %d\nWord Count: %d\nLast Saved: %s\n",
+		o.Name, o.LineCount, o.WordCount, o.LastSaved.Format("2006-01-02 15:04:05"))
 }
 
-func (o *Ollie) String() string {
-	return fmt.Sprintf("File: %s\nLine Count: %d\nWord Count: %d\nLast Saved: %s\n", 
- o.Name, o.LineCount, o.WordCount, o.LastSaved.Format("2006-01-02 15:04:05"))
-}
-
-func (o *Ollie) OWriteFile() (int, error) {
+func (o *File) WriteFile() (int, error) {
 	if o.FileHandle == nil {
 		return 0, fmt.Errorf("Error: File handle null")
 	}
 	bytes := 0
 	for _, s := range o.Lines {
 		bw, err := fmt.Fprintln(o.FileHandle, s)
-		if err != nil {
-			return 0, err
-		}
 		bytes += bw
+		if err != nil {
+			return bytes, err
+		}
 	}
 	o.Saved = true
 	o.LastSaved = time.Now()
 	return bytes, nil
 }
 
-func (o *Ollie) OCreateFile() error {
+func (o *File) CreateFile() error {
 	if o.Name == "" {
 		return fmt.Errorf("ERROR: No file name speified")
 	}

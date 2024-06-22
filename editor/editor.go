@@ -3,12 +3,13 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"ollie/olliefile"
 	"os"
 	"strings"
+
+	"git.sr.ht/~travgm/ollie"
 )
 
-func getWords(s *bufio.Scanner, o *olliefile.Ollie) error {
+func getWords(s *bufio.Scanner, o *ollie.Ollie) error {
 	if s == nil {
 		return fmt.Errorf("GetWords Error, Scanner is empty\n")
 	}
@@ -25,7 +26,7 @@ func getWords(s *bufio.Scanner, o *olliefile.Ollie) error {
 	return nil
 }
 
-func parseCommand(c []string, s *bufio.Scanner, o *olliefile.Ollie) (string, error) {
+func execCommand(c []string, s *bufio.Scanner, o *ollie.Ollie) (string, error) {
 	cmdLen := len(c)
 	if cmdLen > 2 {
 		return "", fmt.Errorf("Invalid command/parameters\n")
@@ -35,6 +36,7 @@ func parseCommand(c []string, s *bufio.Scanner, o *olliefile.Ollie) (string, err
 	if cmdLen > 1 {
 		param = c[1]
 	}
+
 	if cmd == "q" {
 		if o.FileHandle != nil {
 			o.FileHandle.Close()
@@ -43,21 +45,22 @@ func parseCommand(c []string, s *bufio.Scanner, o *olliefile.Ollie) (string, err
 	} else if cmd == "a" {
 		err := getWords(s, o)
 		if err != nil {
-			return "",err
+			return "", err
 		}
-		return "",nil
+		return "", nil
 	} else if cmd == "w" {
 		if param != "" {
 			o.Name = param
-			o.OCreateFile()
+			err := o.CreateFile()
+			if err != nil {
+				return err
+			}
 		}
-		if o.FileHandle != nil && o.Name != "" {
-			bytes, err := o.OWriteFile()
-			fmt.Printf("Wrote %d bytes to %s\n", bytes, o.Name)
-			return string(bytes), err
-		} else {
-			return "", fmt.Errorf("ERROR: Supply file name after command: w")
-		}
+
+		bytes, err := o.WriteFile()
+		fmt.Printf("Wrote %d bytes to %s\n", bytes, o.Name)
+		return string(bytes), err
+
 	} else if cmd == "i" {
 		fmt.Println(o)
 		return "", nil
@@ -75,7 +78,7 @@ func main() {
 	of := olliefile.ONewFile("junk.ollie")
 	if len(os.Args) == 2 {
 		of.Name = os.Args[1]
-		of.OCreateFile()
+		of.CreateFile()
 	}
 	ws := bufio.NewScanner(os.Stdin)
 
@@ -84,7 +87,7 @@ func main() {
 		fmt.Print("? ")
 		ws.Scan()
 		cmd := strings.Split(ws.Text(), " ")
-		_, err := parseCommand(cmd, ws, of)
+		_, err := execCommands(cmd, ws, of)
 		if err != nil {
 			fmt.Println(err)
 		}
