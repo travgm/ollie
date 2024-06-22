@@ -9,7 +9,7 @@ import (
 	"git.sr.ht/~travgm/ollie"
 )
 
-func getWords(s *bufio.Scanner, o *ollie.Ollie) error {
+func getWords(s *bufio.Scanner, o *ollie.File) error {
 	if s == nil {
 		return fmt.Errorf("GetWords Error, Scanner is empty\n")
 	}
@@ -26,7 +26,7 @@ func getWords(s *bufio.Scanner, o *ollie.Ollie) error {
 	return nil
 }
 
-func execCommand(c []string, s *bufio.Scanner, o *ollie.Ollie) (string, error) {
+func execCommand(c []string, s *bufio.Scanner, o *ollie.File) (string, error) {
 	cmdLen := len(c)
 	if cmdLen > 2 {
 		return "", fmt.Errorf("Invalid command/parameters\n")
@@ -53,7 +53,7 @@ func execCommand(c []string, s *bufio.Scanner, o *ollie.Ollie) (string, error) {
 			o.Name = param
 			err := o.CreateFile()
 			if err != nil {
-				return err
+				return "", err
 			}
 		}
 
@@ -75,7 +75,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	of := ollie.File{Name: "junk.ollie"}
+	of := &ollie.File{Name: "junk.ollie"}
 	if len(os.Args) == 2 {
 		of.Name = os.Args[1]
 		of.CreateFile()
@@ -87,7 +87,7 @@ func main() {
 		fmt.Print("? ")
 		ws.Scan()
 		cmd := strings.Split(ws.Text(), " ")
-		_, err := execCommands(cmd, ws, of)
+		_, err := execCommand(cmd, ws, of)
 		if err != nil {
 			fmt.Println(err)
 		}
