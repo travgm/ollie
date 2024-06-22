@@ -20,6 +20,11 @@ func ONewFile(name string) *Ollie {
 	return &Ollie{Name: name, WordCount: 0, LineCount: 0, Saved: false, FileHandle: nil}
 }
 
+func (o *Ollie) String() string {
+	return fmt.Sprintf("File: %s\nLine Count: %d\nWord Count: %d\nLast Saved: %s\n", 
+ o.Name, o.LineCount, o.WordCount, o.LastSaved.Format("2006-01-02 15:04:05"))
+}
+
 func (o *Ollie) OWriteFile() (int, error) {
 	if o.FileHandle == nil {
 		return 0, fmt.Errorf("Error: File handle null")

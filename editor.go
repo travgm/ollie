@@ -58,6 +58,9 @@ func parseCommand(c []string, s *bufio.Scanner, o *olliefile.Ollie) (string, err
 		} else {
 			return "", fmt.Errorf("ERROR: Supply file name after command: w")
 		}
+	} else if cmd == "i" {
+		fmt.Println(o)
+		return "", nil
 	}
 
 	return "", fmt.Errorf("Unknown Command")

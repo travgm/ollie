@@ -21,4 +21,6 @@ and then it will drop you right into the editor. You can then begin typing whate
 To save the file just type ```w``` if you started ollie with a filename. If you want to write everything to a different file
 you can type ```w test.txt``` and it will save to that file instead.
 
+After every command it will drop you back to the editor to type text. If you see the line preceded with ```?``` that means you are in command mode. You can type ```a``` to go back to appending text.
+
 To exit simply type ```q``` at the command prompt.
