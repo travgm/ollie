@@ -75,7 +75,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	of := olliefile.ONewFile("junk.ollie")
+	of := ollie.File{Name: "junk.ollie"}
 	if len(os.Args) == 2 {
 		of.Name = os.Args[1]
 		of.CreateFile()
