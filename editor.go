@@ -20,11 +20,12 @@ func getWords(s *bufio.Scanner, o *olliefile.Ollie) error {
 		o.Lines = append(o.Lines, s.Text())
 		o.LineCount += 1
 		o.WordCount += len(strings.Split(" ", s.Text()))
+		fmt.Println(o.LineCount)
 	}
 	return nil
 }
 
-func parseCommand(c []string, o *olliefile.Ollie) (string, error) {
+func parseCommand(c []string, s *bufio.Scanner, o *olliefile.Ollie) (string, error) {
 	cmdLen := len(c)
 	if cmdLen > 2 {
 		return "", fmt.Errorf("Invalid command/parameters\n")
@@ -39,6 +40,12 @@ func parseCommand(c []string, o *olliefile.Ollie) (string, error) {
 			o.FileHandle.Close()
 		}
 		os.Exit(0)
+	} else if cmd == "a" {
+		err := getWords(s, o)
+		if err != nil {
+			return "",err
+		}
+		return "",nil
 	} else if cmd == "w" {
 		if param != "" {
 			o.Name = param
@@ -74,7 +81,7 @@ func main() {
 		fmt.Print("? ")
 		ws.Scan()
 		cmd := strings.Split(ws.Text(), " ")
-		_, err := parseCommand(cmd, of)
+		_, err := parseCommand(cmd, ws, of)
 		if err != nil {
 			fmt.Println(err)
 		}
