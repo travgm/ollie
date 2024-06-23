@@ -10,7 +10,7 @@ import (
 
 type Tokens int
 
-const defaultConfFile := "ollie.conf"
+const defaultConfFile := "~/.ollie.conf"
 
 type Settings struct {
 	settings map[string]string
@@ -70,6 +70,25 @@ func NewTokenizer(i *os.File) *Tokenizer {
 
 func NewParser(t *Tokenizer) *Parser {
 	return &Parser{tokenizer: t, tokens []Token{}}
+}
+
+func ParseConfig() (*Settings, error) {
+	conf, err := os.Open(defaultConfFile)
+	if err != nil {
+		return nil, fmt.Errorf("no config file found")
+	}
+	defer conf.Close()
+
+	// Need to add error checking
+	tokenizer := NewTokenizer(conf)
+	parser := NewParser(tokenizer)
+
+	parsedConfig, err := parser.Parse()
+	if err != nil {
+		return nil, err
+	}
+
+	return parsedConfig, nil
 }
 
 // We iterate the config file lines either returning error tokens or
@@ -167,7 +186,18 @@ func (p *Parser) Parse() (*Settings, error) {
 				continue
 			case TokenEOF:
 				return settings, nil
-
+			case TokenKey:
+				key := token.Value
+				_, ok := confParams[key]
+				if ok {
+					nt := p.getNextToken()
+					if nt.Type == TokenEquals {
+						val := p.getNextToken()
+						settings[key] = val
+					}
+				}
+			default:
+				return nil, fmt.Errorf("Invalid token found %v at %d", token, token.Location)
 		}
 	}
 }
