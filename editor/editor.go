@@ -7,11 +7,11 @@ import (
 	"strings"
 
 	"git.sr.ht/~travgm/ollie/tree/develop/conf"
-	"git.sr.ht/~travgm/ollie/tree/develop/ollie"
+	"git.sr.ht/~travgm/ollie/tree/develop/olliefile"
 	"git.sr.ht/~travgm/ollie/tree/develop/spellcheck"
 )
 
-func getWords(s *bufio.Scanner, o *ollie.File) error {
+func getWords(s *bufio.Scanner, o *olliefile.File) error {
 	if s == nil {
 		return fmt.Errorf("GetWords Error, Scanner is empty\n")
 	}
@@ -28,7 +28,7 @@ func getWords(s *bufio.Scanner, o *ollie.File) error {
 	return nil
 }
 
-func execCommand(c []string, s *bufio.Scanner, o *ollie.File) (string, error) {
+func execCommand(c []string, s *bufio.Scanner, o *olliefile.File) (string, error) {
 	cmdLen := len(c)
 	if cmdLen > 2 {
 		return "", fmt.Errorf("Invalid command/parameters\n")
@@ -72,8 +72,8 @@ func execCommand(c []string, s *bufio.Scanner, o *ollie.File) (string, error) {
 	return "", nil
 }
 
-func initEditor(args []string) (*conf.Settings, *ollie.Ollie) {
-	of := &ollie.File{Name: "junk.ollie"}
+func initEditor(args []string) (*conf.Settings, *olliefile.Ollie) {
+	of := &olliefile.File{Name: "junk.ollie"}
 	if len(args) == 2 {
 		of.Name = args[1]
 		of.CreateFile()
@@ -91,7 +91,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	initEditor()
+	initEditor(os.Args)
 
 	ws := bufio.NewScanner(os.Stdin)
 	for {

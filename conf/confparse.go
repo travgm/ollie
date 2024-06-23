@@ -129,22 +129,21 @@ func (t *Tokenizer) tokenizeLine(line string) Token {
 	for t.column < len(line) {
 		sym := line[t.column]
 
-		switch sym {
-			case '#':
+		switch {
+			case sym == '#':
 				t.column += 1
 				return Token{Type: TokenComment, Value: line, Location: t.column}
-			case ' ':
+			case sym == ' ':
 				t.column += 1
-			case '=':
+			case sym == '=':
 				t.column += 1
 				return Token{Type: TokenEquals, Value: "=", Location: t.column}
-			case '\n':
+			case sym == '\n':
 				t.column += 1
 				return Token{Type: TokenNL, Value: "\n", Location: t.column}
 			// If it isnt any of the other symbols for the grammar we strip the
 			// key/value pairs here.
-			case (unicode.IsLetter(rune(sym)) || unicode.IsDigit(rune(sym)) || 
-				rune(sym) == '-'):
+			case unicode.IsLetter(rune(sym)) || unicode.IsDigit(rune(sym)) || sym == '-':
 				return findKeyOrValueInLine(line, t)
 			default:
 				t.column += 1

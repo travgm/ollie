@@ -1,4 +1,4 @@
-package ollie
+package olliefile
 
 import (
 	"fmt"
