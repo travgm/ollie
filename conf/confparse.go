@@ -143,19 +143,22 @@ func (t *Tokenizer) tokenizeLine(line string) Token {
 				return Token{Type: TokenNL, Value: "\n", Location: t.column}
 			// If it isnt any of the other symbols for the grammar we strip the
 			// key/value pairs here.
-			case unicode.IsLetter(sym) || unicode.IsDigit(sym) || sym == '-':
+			case (unicode.IsLetter(rune(sym)) || unicode.IsDigit(rune(sym)) || 
+				rune(sym) == '-'):
 				return findKeyOrValueInLine(line, t)
 			default:
 				t.column += 1
-				return Token{Type: TokenError, Value: sym, Location: t.column}
+				return Token{Type: TokenError, Value: string(sym), Location: t.column}
 		}
 	}
+	return Token{}
 }
 
-func findKey(line string, t *Tokenizer) Token {
+func findKeyOrValueInLine(line string, t *Tokenizer) Token {
 	begin := t.column
 	for t.column < len(line) && 
-		(unicode.IsLetter(line[t.column]) || unicode.IsDigit(line[t.column]) || line[t.column] == '-') {
+		(unicode.IsLetter(rune(line[t.column])) || 
+		unicode.IsDigit(rune(line[t.column])) || line[t.column] == '-') {
 		t.column++
 	}
 
@@ -172,11 +175,11 @@ func findKey(line string, t *Tokenizer) Token {
 			}
 		}
 	}
+	return Token{}
 }
 
 func (p *Parser) getNextToken() Token {
 	if p.location >= len(p.tokens) {
-		token := p.tokenizer.GetNextToken()
 		p.tokens = append(p.tokens, p.tokenizer.GetNextToken())
 	}
 	p.location += 1
@@ -184,7 +187,7 @@ func (p *Parser) getNextToken() Token {
 }
 
 func (p *Parser) Parse() (*Settings, error) {
-	settings := &Settings{settings: make(map[string]string)}
+	conf := &Settings{settings: make(map[string]string)}
 
 	for {
 		token := p.getNextToken()
@@ -192,7 +195,7 @@ func (p *Parser) Parse() (*Settings, error) {
 			case TokenComment:
 				continue
 			case TokenEOF:
-				return settings, nil
+				return conf, nil
 			case TokenKey:
 				key := token.Value
 				_, ok := confParams[key]
@@ -200,7 +203,7 @@ func (p *Parser) Parse() (*Settings, error) {
 					nt := p.getNextToken()
 					if nt.Type == TokenEquals {
 						val := p.getNextToken()
-						settings[key] = val
+						conf.settings[key] = val.Value
 					}
 				}
 			default:
