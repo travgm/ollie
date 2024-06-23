@@ -1,4 +1,4 @@
-package ollie
+package spellcheck
 
 type Dict struct {
 	WordFile string
