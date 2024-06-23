@@ -10,8 +10,11 @@ import (
 
 type Tokens int
 
+// Default location of the config file
+// an example can be found in ../examples 
 const defaultConfFile := "~/.ollie.conf"
 
+// Holds the key value pairs parsed from the config file
 type Settings struct {
 	settings map[string]string
 }
@@ -44,6 +47,9 @@ confParams := map[string]int{
 }
 
 // Token holds the Token type and the value of the token found in the stream
+//
+// We will hold a stream of these structs for each token found in the config file
+// the tokenizer does NOT validate tokens.
 type Token struct {
 	Type Token
 	Value string
@@ -54,8 +60,9 @@ type Tokenizer struct {
 	lines *bufio.Scanner
 	currentLine string
 	location int
-	column int
+	column int // Used for position in the line
 }
+
 
 type Parser struct {
 	tokenizer *Tokenizer

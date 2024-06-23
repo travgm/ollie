@@ -6,7 +6,9 @@ import (
 	"os"
 	"strings"
 
-	"git.sr.ht/~travgm/ollie"
+	"git.sr.ht/~travgm/ollie/conf"
+	"git.sr.ht/~travgm/ollie/ollie"
+	"git.sr.ht/~travgm/ollie/spellcheck"
 )
 
 func getWords(s *bufio.Scanner, o *ollie.File) error {
@@ -70,19 +72,28 @@ func execCommand(c []string, s *bufio.Scanner, o *ollie.File) (string, error) {
 	return "", nil
 }
 
+func initEditor(args []string) (*conf.Settings, *ollie.Ollie) {
+	of := &ollie.File{Name: "junk.ollie"}
+	if len(args) == 2 {
+		of.Name = args[1]
+		of.CreateFile()
+	}
+	config, err := conf.ParseConfig()
+	if err != nil {
+		return nil, of
+	}
+	return config, of
+}
+
 func main() {
 	if len(os.Args) < 1 || len(os.Args) > 2 {
 		fmt.Println("ollie <file>")
 		os.Exit(0)
 	}
 
-	of := &ollie.File{Name: "junk.ollie"}
-	if len(os.Args) == 2 {
-		of.Name = os.Args[1]
-		of.CreateFile()
-	}
-	ws := bufio.NewScanner(os.Stdin)
+	initEditor()
 
+	ws := bufio.NewScanner(os.Stdin)
 	for {
 		getWords(ws, of)
 		fmt.Print("? ")
