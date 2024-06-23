@@ -72,7 +72,7 @@ func execCommand(c []string, s *bufio.Scanner, o *olliefile.File) (string, error
 	return "", nil
 }
 
-func initEditor(args []string) (*conf.Settings, *olliefile.Ollie) {
+func initEditor(args []string) (*conf.Settings, *olliefile.File) {
 	of := &olliefile.File{Name: "junk.ollie"}
 	if len(args) == 2 {
 		of.Name = args[1]
@@ -82,6 +82,9 @@ func initEditor(args []string) (*conf.Settings, *olliefile.Ollie) {
 	if err != nil {
 		return nil, of
 	}
+
+	_ = spellcheck.Dict{}
+
 	return config, of
 }
 
@@ -91,7 +94,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	initEditor(os.Args)
+	_, of := initEditor(os.Args)
 
 	ws := bufio.NewScanner(os.Stdin)
 	for {
