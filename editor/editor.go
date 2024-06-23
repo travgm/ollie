@@ -6,9 +6,9 @@ import (
 	"os"
 	"strings"
 
-	"git.sr.ht/~travgm/ollie/conf"
-	"git.sr.ht/~travgm/ollie/ollie"
-	"git.sr.ht/~travgm/ollie/spellcheck"
+	"git.sr.ht/~travgm/ollie/tree/develop/conf"
+	"git.sr.ht/~travgm/ollie/tree/develop/ollie"
+	"git.sr.ht/~travgm/ollie/tree/develop/spellcheck"
 )
 
 func getWords(s *bufio.Scanner, o *ollie.File) error {

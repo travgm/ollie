@@ -12,7 +12,7 @@ type Tokens int
 
 // Default location of the config file
 // an example can be found in ../examples 
-const defaultConfFile := "~/.ollie.conf"
+const defaultConfFile = "~/.ollie.conf"
 
 // Holds the key value pairs parsed from the config file
 type Settings struct {
@@ -40,7 +40,7 @@ const (
 // Valid configuration file keys and the valid types for the values
 // 
 // This is used during configuration file validation during the parsing phase
-confParams := map[string]int{
+var confParams = map[string]Tokens{
 	"spellcheck": TokenString,
 	"dictionary": TokenString,
 	"append-default": TokenString,
@@ -51,7 +51,7 @@ confParams := map[string]int{
 // We will hold a stream of these structs for each token found in the config file
 // the tokenizer does NOT validate tokens.
 type Token struct {
-	Type Token
+	Type Tokens
 	Value string
 	Location int  // We save the location of the token in the file for error handling
 }
@@ -76,7 +76,7 @@ func NewTokenizer(i *os.File) *Tokenizer {
 }
 
 func NewParser(t *Tokenizer) *Parser {
-	return &Parser{tokenizer: t, tokens []Token{}}
+	return &Parser{tokenizer: t, tokens: []Token{}}
 }
 
 func ParseConfig() (*Settings, error) {
@@ -133,14 +133,14 @@ func (t *Tokenizer) tokenizeLine(line string) Token {
 			case '#':
 				t.column += 1
 				return Token{Type: TokenComment, Value: line, Location: t.column}
-			case unicode.IsSpace(symbol):
+			case ' ':
 				t.column += 1
 			case '=':
 				t.column += 1
-				return Token{Type: TokenEquals, Value: sym, Location: t.column}
+				return Token{Type: TokenEquals, Value: "=", Location: t.column}
 			case '\n':
 				t.column += 1
-				return Token{Type: TokenNL, Value: sym, Location: t.column}
+				return Token{Type: TokenNL, Value: "\n", Location: t.column}
 			// If it isnt any of the other symbols for the grammar we strip the
 			// key/value pairs here.
 			case unicode.IsLetter(sym) || unicode.IsDigit(sym) || sym == '-':
@@ -152,7 +152,7 @@ func (t *Tokenizer) tokenizeLine(line string) Token {
 	}
 }
 
-func findKey(string line, t *Tokenizer) Token {
+func findKey(line string, t *Tokenizer) Token {
 	begin := t.column
 	for t.column < len(line) && 
 		(unicode.IsLetter(line[t.column]) || unicode.IsDigit(line[t.column]) || line[t.column] == '-') {
@@ -163,7 +163,7 @@ func findKey(string line, t *Tokenizer) Token {
 	// test it for either being =val or key=
 	val := line[begin:t.column]
 	if strings.Contains(val, "=") {
-		valOrKey := strings.Split(value, "=")
+		valOrKey := strings.Split(val, "=")
 		if len(valOrKey) >= 2 {
 			if valOrKey[0] == "=" {
 				return Token{Type: TokenValue, Value: val}
