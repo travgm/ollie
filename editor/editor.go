@@ -36,19 +36,20 @@ func execCommand(c []string, s *bufio.Scanner, o *ollie.File) (string, error) {
 	if cmdLen > 1 {
 		param = c[1]
 	}
-
-	if cmd == "q" {
+	
+	switch cmd {
+	case "q":
 		if o.FileHandle != nil {
 			o.FileHandle.Close()
 		}
-		os.Exit(0)
-	} else if cmd == "a" {
+		os.Exit(0)		
+	case "a":
 		err := getWords(s, o)
 		if err != nil {
 			return "", err
 		}
 		return "", nil
-	} else if cmd == "w" {
+	case "w":
 		if param != "" {
 			o.Name = param
 			err := o.CreateFile()
@@ -60,13 +61,13 @@ func execCommand(c []string, s *bufio.Scanner, o *ollie.File) (string, error) {
 		bytes, err := o.WriteFile()
 		fmt.Printf("Wrote %d bytes to %s\n", bytes, o.Name)
 		return string(bytes), err
-
-	} else if cmd == "i" {
+	case "i":
 		fmt.Println(o)
 		return "", nil
+	default:
+		return "", fmt.Errorf("unknown command")			
 	}
-
-	return "", fmt.Errorf("Unknown Command")
+	return "", nil
 }
 
 func main() {
