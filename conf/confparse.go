@@ -1,18 +1,24 @@
 package conf
 
 import (
-	"fmt"
 	"bufio"
+	"fmt"
+	"log"
 	"os"
+	"path/filepath"
 	"strings"
+	"time"
 	"unicode"
 )
 
 type Tokens int
 
 // Default location of the config file
-// an example can be found in ../examples 
-const defaultConfFile = "~/.ollie.conf"
+// an example can be found in ../examples
+const defaultConfFile = "/.ollie.conf"
+const logFilename = "ollie.log"
+
+var timeFormat = "2006-01-02 15:04:05"
 
 // Holds the key value pairs parsed from the config file
 type Settings struct {
@@ -38,11 +44,11 @@ const (
 )
 
 // Valid configuration file keys and the valid types for the values
-// 
+//
 // This is used during configuration file validation during the parsing phase
 var confParams = map[string]Tokens{
-	"spellcheck": TokenString,
-	"dictionary": TokenString,
+	"spellcheck":     TokenString,
+	"dictionary":     TokenString,
 	"append-default": TokenString,
 }
 
@@ -51,25 +57,37 @@ var confParams = map[string]Tokens{
 // We will hold a stream of these structs for each token found in the config file
 // the tokenizer does NOT validate tokens.
 type Token struct {
-	Type Tokens
-	Value string
-	Location int  // We save the location of the token in the file for error handling
+	Type     Tokens
+	Value    string
+	Location int // We save the location of the token in the file for error handling
 }
 
 type Tokenizer struct {
-	lines *bufio.Scanner
+	lines       *bufio.Scanner
 	currentLine string
-	location int
-	column int // Used for position in the line
+	location    int
+	column      int // Used for position in the line
 }
-
 
 type Parser struct {
 	tokenizer *Tokenizer
-	tokens []Token
-	location int
+	tokens    []Token
+	location  int
 }
 
+func parserTime() string {
+	return time.Now().Format(timeFormat)
+}
+
+func init() {
+	f, err := os.OpenFile(logFilename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	log.SetOutput(f)
+	log.SetPrefix("confparser: ")
+	log.Printf("Logging started at %s\n", parserTime())
+}
 
 func NewTokenizer(i *os.File) *Tokenizer {
 	return &Tokenizer{lines: bufio.NewScanner(i)}
@@ -80,8 +98,15 @@ func NewParser(t *Tokenizer) *Parser {
 }
 
 func ParseConfig() (*Settings, error) {
-	conf, err := os.Open(defaultConfFile)
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
+		log.Println("error getting users home directory")
+	}
+
+	configPath := filepath.Join(homeDir, defaultConfFile)
+	conf, err := os.Open(configPath)
+	if err != nil {
+		log.Println("unable to find config", defaultConfFile)
 		return nil, fmt.Errorf("no config file found")
 	}
 	defer conf.Close()
@@ -90,8 +115,10 @@ func ParseConfig() (*Settings, error) {
 	tokenizer := NewTokenizer(conf)
 	parser := NewParser(tokenizer)
 
+	log.Println("started parsing config")
 	parsedConfig, err := parser.Parse()
 	if err != nil {
+		log.Println("error encountered parsing config:", err)
 		return nil, err
 	}
 
@@ -103,14 +130,16 @@ func ParseConfig() (*Settings, error) {
 func (t *Tokenizer) GetNextToken() Token {
 	lineNumber := 0
 	for t.lines.Scan() {
+		log.Printf("%s: parsing line: %s", parserTime(), t.lines.Text())
+
 		// This will be used for error reporting where syntax errors could occur during
 		// parsing
 		lineNumber += 1
 		t.currentLine = t.lines.Text()
 		t.location = lineNumber
 
-		if (len(strings.TrimSpace(t.currentLine)) == 0) {
-			continue;
+		if len(strings.TrimSpace(t.currentLine)) == 0 {
+			continue
 		}
 
 		return t.tokenizeLine(t.currentLine)
@@ -130,24 +159,24 @@ func (t *Tokenizer) tokenizeLine(line string) Token {
 		sym := line[t.column]
 
 		switch {
-			case sym == '#':
-				t.column += 1
-				return Token{Type: TokenComment, Value: line, Location: t.column}
-			case sym == ' ':
-				t.column += 1
-			case sym == '=':
-				t.column += 1
-				return Token{Type: TokenEquals, Value: "=", Location: t.column}
-			case sym == '\n':
-				t.column += 1
-				return Token{Type: TokenNL, Value: "\n", Location: t.column}
-			// If it isnt any of the other symbols for the grammar we strip the
-			// key/value pairs here.
-			case unicode.IsLetter(rune(sym)) || unicode.IsDigit(rune(sym)) || sym == '-':
-				return findKeyOrValueInLine(line, t)
-			default:
-				t.column += 1
-				return Token{Type: TokenError, Value: string(sym), Location: t.column}
+		case sym == '#':
+			t.column += 1
+			return Token{Type: TokenComment, Value: line, Location: t.column}
+		case sym == ' ':
+			t.column += 1
+		case sym == '=':
+			t.column += 1
+			return Token{Type: TokenEquals, Value: "=", Location: t.column}
+		case sym == '\n':
+			t.column += 1
+			return Token{Type: TokenNL, Value: "\n", Location: t.column}
+		// If it isnt any of the other symbols for the grammar we strip the
+		// key/value pairs here.
+		case unicode.IsLetter(rune(sym)) || unicode.IsDigit(rune(sym)) || sym == '-':
+			return findKeyOrValueInLine(line, t)
+		default:
+			t.column += 1
+			return Token{Type: TokenError, Value: string(sym), Location: t.column}
 		}
 	}
 	return Token{}
@@ -155,9 +184,9 @@ func (t *Tokenizer) tokenizeLine(line string) Token {
 
 func findKeyOrValueInLine(line string, t *Tokenizer) Token {
 	begin := t.column
-	for t.column < len(line) && 
-		(unicode.IsLetter(rune(line[t.column])) || 
-		unicode.IsDigit(rune(line[t.column])) || line[t.column] == '-') {
+	for t.column < len(line) &&
+		(unicode.IsLetter(rune(line[t.column])) ||
+			unicode.IsDigit(rune(line[t.column])) || line[t.column] == '-') {
 		t.column++
 	}
 
@@ -190,23 +219,24 @@ func (p *Parser) Parse() (*Settings, error) {
 
 	for {
 		token := p.getNextToken()
+		log.Println("current token:", token)
 		switch token.Type {
-			case TokenComment:
-				continue
-			case TokenEOF:
-				return conf, nil
-			case TokenKey:
-				key := token.Value
-				_, ok := confParams[key]
-				if ok {
-					nt := p.getNextToken()
-					if nt.Type == TokenEquals {
-						val := p.getNextToken()
-						conf.settings[key] = val.Value
-					}
+		case TokenComment:
+			continue
+		case TokenEOF:
+			return conf, nil
+		case TokenKey:
+			key := token.Value
+			_, ok := confParams[key]
+			if ok {
+				nt := p.getNextToken()
+				if nt.Type == TokenEquals {
+					val := p.getNextToken()
+					conf.settings[key] = val.Value
 				}
-			default:
-				return nil, fmt.Errorf("Invalid token found %v at %d", token, token.Location)
+			}
+		default:
+			return nil, fmt.Errorf("Invalid token found %v at %d", token, token.Location)
 		}
 	}
 }
