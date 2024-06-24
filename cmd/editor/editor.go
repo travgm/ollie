@@ -16,7 +16,9 @@ func stateReceiver(receiver <-chan error, done <-chan string) {
 	for {
 		select {
 		case err := <-receiver:
-			fmt.Println(err)
+			if err != nil {
+				fmt.Println(err)
+			}
 		case <-done:
 			return
 		}
