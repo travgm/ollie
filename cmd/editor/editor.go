@@ -38,13 +38,13 @@ func execCommand(c []string, s *bufio.Scanner, o *olliefile.File) (string, error
 	if cmdLen > 1 {
 		param = c[1]
 	}
-	
+
 	switch cmd {
 	case "q":
 		if o.FileHandle != nil {
 			o.FileHandle.Close()
 		}
-		os.Exit(0)		
+		os.Exit(0)
 	case "a":
 		err := getWords(s, o)
 		if err != nil {
@@ -67,7 +67,7 @@ func execCommand(c []string, s *bufio.Scanner, o *olliefile.File) (string, error
 		fmt.Println(o)
 		return "", nil
 	default:
-		return "", fmt.Errorf("unknown command")			
+		return "", fmt.Errorf("unknown command")
 	}
 	return "", nil
 }
@@ -94,7 +94,10 @@ func main() {
 		os.Exit(0)
 	}
 
-	_, of := initEditor(os.Args)
+	cf, of := initEditor(os.Args)
+	if cf != nil {
+		fmt.Println(cf)
+	}
 
 	ws := bufio.NewScanner(os.Stdin)
 	for {

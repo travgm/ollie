@@ -162,7 +162,7 @@ func (t *Tokenizer) tokenizeLine(line string) Token {
 		case sym == '#':
 			t.column += 1
 			return Token{Type: TokenComment, Value: line, Location: t.column}
-		case sym == ' ':
+		case unicode.IsSpace(rune(sym)):
 			t.column += 1
 		case sym == '=':
 			t.column += 1
@@ -173,6 +173,7 @@ func (t *Tokenizer) tokenizeLine(line string) Token {
 		// If it isnt any of the other symbols for the grammar we strip the
 		// key/value pairs here.
 		case unicode.IsLetter(rune(sym)) || unicode.IsDigit(rune(sym)) || sym == '-':
+			log.Println("tokenizer line should be val or key:", line)
 			return findKeyOrValueInLine(line, t)
 		default:
 			t.column += 1
@@ -183,35 +184,40 @@ func (t *Tokenizer) tokenizeLine(line string) Token {
 }
 
 func findKeyOrValueInLine(line string, t *Tokenizer) Token {
-	begin := t.column
-	for t.column < len(line) &&
-		(unicode.IsLetter(rune(line[t.column])) ||
-			unicode.IsDigit(rune(line[t.column])) || line[t.column] == '-') {
-		t.column++
+
+	fl := strings.Replace(line, " ", "", -1)
+
+	end := 0
+	begin := 0
+	for end < len(fl) {
+		end++
+		if fl[end] == '=' {
+			break
+		}
 	}
 
 	// We have reached either something that isnt a character/digit or a valid separating symbol for keys "-"
 	// test it for either being =val or key=
-	val := line[begin:t.column]
+	val := fl[begin : end+1]
 	if strings.Contains(val, "=") {
-		valOrKey := strings.Split(val, "=")
-		if len(valOrKey) >= 2 {
-			if valOrKey[0] == "=" {
-				return Token{Type: TokenValue, Value: val}
-			} else if valOrKey[1] == "=" {
-				return Token{Type: TokenKey, Value: valOrKey[0]}
-			}
+
+		k, v, _ := strings.Cut(val, "=")
+		key := strings.TrimSpace(k)
+		value := strings.TrimSpace(v)
+
+		if len(value) > 0 {
+			return Token{Type: TokenValue, Value: value}
+		}
+
+		if len(value) > 0 {
+			return Token{Type: TokenKey, Value: key}
 		}
 	}
 	return Token{}
 }
 
 func (p *Parser) getNextToken() Token {
-	if p.location >= len(p.tokens) {
-		p.tokens = append(p.tokens, p.tokenizer.GetNextToken())
-	}
-	p.location += 1
-	return p.tokens[p.location-1]
+	return p.tokenizer.GetNextToken()
 }
 
 func (p *Parser) Parse() (*Settings, error) {
@@ -219,6 +225,9 @@ func (p *Parser) Parse() (*Settings, error) {
 
 	for {
 		token := p.getNextToken()
+		if token == (Token{}) {
+			continue
+		}
 		log.Println("current token:", token)
 		switch token.Type {
 		case TokenComment:
@@ -235,6 +244,9 @@ func (p *Parser) Parse() (*Settings, error) {
 					conf.settings[key] = val.Value
 				}
 			}
+		case TokenValue:
+			continue
+		case TokenEquals:
 		default:
 			return nil, fmt.Errorf("Invalid token found %v at %d", token, token.Location)
 		}
