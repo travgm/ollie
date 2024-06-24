@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -10,6 +11,17 @@ import (
 	"git.sr.ht/~travgm/ollie/tree/develop/olliefile"
 	"git.sr.ht/~travgm/ollie/tree/develop/spellcheck"
 )
+
+func stateReceiver(receiver <-chan error, done <-chan string) {
+	for {
+		select {
+		case err := <-receiver:
+			fmt.Println(err)
+		case <-done:
+			return
+		}
+	}
+}
 
 func getWords(s *bufio.Scanner, o *olliefile.File) error {
 	if s == nil {
@@ -28,48 +40,53 @@ func getWords(s *bufio.Scanner, o *olliefile.File) error {
 	return nil
 }
 
-func execCommand(c []string, s *bufio.Scanner, o *olliefile.File) (string, error) {
-	cmdLen := len(c)
-	if cmdLen > 2 {
-		return "", fmt.Errorf("Invalid command/parameters\n")
-	}
-	cmd := c[0]
-	param := ""
-	if cmdLen > 1 {
-		param = c[1]
-	}
+func execCommand(executor <-chan string, receiver chan<- error,
+	done <-chan string, s *bufio.Scanner, o *olliefile.File) {
+	for {
+		select {
+		case val := <- executor:
+		c := strings.Split(val, " ")
 
-	switch cmd {
-	case "q":
-		if o.FileHandle != nil {
-			o.FileHandle.Close()
+		cmdLen := len(c)
+		if cmdLen > 2 {
+			receiver <- errors.New("Invalid command/parameters\n")
 		}
-		os.Exit(0)
-	case "a":
-		err := getWords(s, o)
-		if err != nil {
-			return "", err
+
+		cmd := c[0]
+		param := ""
+		if cmdLen > 1 {
+			param = c[1]
 		}
-		return "", nil
-	case "w":
-		if param != "" {
-			o.Name = param
-			err := o.CreateFile()
+
+		switch cmd {
+		case "a":
+			err := getWords(s, o)
 			if err != nil {
-				return "", err
+				receiver <- err
 			}
-		}
+			receiver <- nil
+		case "w":
+			if param != "" {
+				o.Name = param
+				err := o.CreateFile()
+				if err != nil {
+					receiver <- err
+				}
+			}
 
-		bytes, err := o.WriteFile()
-		fmt.Printf("Wrote %d bytes to %s\n", bytes, o.Name)
-		return string(bytes), err
-	case "i":
-		fmt.Println(o)
-		return "", nil
-	default:
-		return "", fmt.Errorf("unknown command")
+			bytes, err := o.WriteFile()
+			fmt.Printf("Wrote %d bytes to %s\n", bytes, o.Name)
+			receiver <- err
+		case "i":
+			fmt.Println(o)
+			receiver <- nil
+		default:
+			receiver <- errors.New("unknown command")
+		}
+		case <- done:
+			return
+		}
 	}
-	return "", nil
 }
 
 func initEditor(args []string) (*conf.Settings, *olliefile.File) {
@@ -100,14 +117,22 @@ func main() {
 	}
 
 	ws := bufio.NewScanner(os.Stdin)
+
+	executor := make(chan string, 1)
+	receiver := make(chan error, 1)
+	done := make(chan string, 1)
+	go execCommand(executor, receiver, done, ws, of)
+	go stateReceiver(receiver, done)
+
 	for {
 		getWords(ws, of)
 		fmt.Print("? ")
 		ws.Scan()
-		cmd := strings.Split(ws.Text(), " ")
-		_, err := execCommand(cmd, ws, of)
-		if err != nil {
-			fmt.Println(err)
+		in := ws.Text()
+		if in == "q" {
+			close(done)
+			break
 		}
+		executor <- in
 	}
 }
