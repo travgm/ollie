@@ -5,7 +5,6 @@ import (
 	"math"
 	"os"
 	"slices"
-	"strings"
 )
 
 // Dict holds information regarding the dictionary we have loaded and some
@@ -46,7 +45,7 @@ func (d *Dict) CheckWord(word string) ([]string, error) {
 	// suggestions
 	for _ = range d.MaxSuggest {
 		for _, w := range d.dictionary {
-			if strings.TrimSpace(w) == "" {
+			if slices.Contains(wordChoices, w) {
 				continue
 			}
 			dist := levDistance(word, w)
@@ -56,8 +55,10 @@ func (d *Dict) CheckWord(word string) ([]string, error) {
 			}
 		}
 
-		if slices.Contains(wordChoices, bestWord) == false {
-			wordChoices = append(wordChoices, strings.TrimSpace(bestWord))
+		if slices.Contains(wordChoices, bestWord) == false &&
+bestWord != word {
+			wordChoices = append(wordChoices, bestWord)
+
 		}
 
 	}

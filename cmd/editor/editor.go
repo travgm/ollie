@@ -12,7 +12,7 @@ import (
 	"git.sr.ht/~travgm/ollie/tree/develop/spellcheck"
 )
 
-func stateReceiver(receiver <-chan error, done <-chan string) {
+func execStateReceiver(receiver <-chan error, done <-chan string) {
 	for {
 		select {
 		case err := <-receiver:
@@ -37,7 +37,7 @@ func execSpellchecker(spelling chan []string, done <-chan string) {
 		// We received a message to the spellchecker. We spell check the slice
 		// and send back a slice that has suggestions.
 		case words := <-spelling:
-			suggestion := make([]string, dict.MaxSuggest)
+			suggestion := make([]string, 1)
 			for _, word := range words {
 				vals, err := dict.CheckWord(word)
 				if err != nil {
@@ -51,35 +51,6 @@ func execSpellchecker(spelling chan []string, done <-chan string) {
 			return
 		}
 	}
-}
-
-func getWords(spelling chan []string, s *bufio.Scanner, o *olliefile.File) error {
-	if s == nil {
-		return fmt.Errorf("GetWords Error, Scanner is empty\n")
-	}
-
-	// We will eventually get this from the config
-	shouldSpellcheck := true
-	for s.Scan() {
-		if s.Text() == "." {
-			break
-		}
-
-		// set shouldSpellcheck to true to turn on spellchecking after each entry
-		// currently there is a bug printing ,,,,,,,word1,,,,,word2 etc...
-		if shouldSpellcheck && len(s.Text()) >= 3 {
-			spelling <- strings.Fields(s.Text())
-			fmt.Println("spellchecking...")
-			val := <-spelling
-
-			fmt.Printf("suggestions: %s\n", strings.Join(val, ", "))
-		}
-		o.Lines = append(o.Lines, s.Text())
-		o.LineCount += 1
-		o.WordCount += len(strings.Split(" ", s.Text()))
-		fmt.Println(o.LineCount)
-	}
-	return nil
 }
 
 func execCommand(executor <-chan string, receiver chan<- error,
@@ -131,6 +102,47 @@ func execCommand(executor <-chan string, receiver chan<- error,
 	}
 }
 
+func getWords(spelling chan []string, s *bufio.Scanner, o *olliefile.File) error {
+	if s == nil {
+		return fmt.Errorf("GetWords Error, Scanner is empty\n")
+	}
+
+	// We will eventually get this from the config
+	shouldSpellcheck := true
+	for s.Scan() {
+		if s.Text() == "." {
+			break
+		}
+
+		if shouldSpellcheck && len(s.Text()) >= 3 {
+			spelling <- strings.Fields(s.Text())
+			fmt.Println("spellchecking...")
+			val := <-spelling
+
+			// Print suggestions
+			if len(val) > 0 {
+				count := 1
+				for _, suggest := range val {
+					// Need to find out why this is happening
+					if suggest == "" {
+						continue
+					}
+					fmt.Printf(" %d:%s", count, suggest)
+					count += 1
+				}
+				fmt.Println("\n")
+			} else {
+				fmt.Println("no suggestions")
+			}
+		}
+		o.Lines = append(o.Lines, s.Text())
+		o.LineCount += 1
+		o.WordCount += len(strings.Split(" ", s.Text()))
+		fmt.Println(o.LineCount)
+	}
+	return nil
+}
+
 func initEditor(args []string) (*conf.Settings, *olliefile.File) {
 	of := &olliefile.File{Name: "junk.ollie"}
 	if len(args) == 2 {
@@ -171,7 +183,7 @@ func main() {
 	// way to many channels
 	go execCommand(executor, receiver, done, spelling, ws, of)
 	go execSpellchecker(spelling, done)
-	go stateReceiver(receiver, done)
+	go execStateReceiver(receiver, done)
 
 	for {
 		getWords(spelling, ws, of)
