@@ -34,20 +34,21 @@ func execSpellchecker(spelling chan []string, done <-chan string) {
 
 	for {
 		select {
-			// We received a message to the spellchecker. We spell check the slice
-			// and send back a slice that has suggestions.
-			case words := <-spelling:
-				for _, word := range words {
-					vals, err := dict.CheckWord(word)
-					if err != nil {
-						fmt.Println(err)
-						continue
-					}
-					spelling <- vals
+		// We received a message to the spellchecker. We spell check the slice
+		// and send back a slice that has suggestions.
+		case words := <-spelling:
+			suggestion := make([]string, dict.MaxSuggest)
+			for _, word := range words {
+				vals, err := dict.CheckWord(word)
+				if err != nil {
+					fmt.Println(err)
+					continue
 				}
-				spelling <- []string{""}
-			case <-done:
-				return
+				suggestion = append(suggestion, vals...)
+			}
+			spelling <- suggestion
+		case <-done:
+			return
 		}
 	}
 }
@@ -57,19 +58,21 @@ func getWords(spelling chan []string, s *bufio.Scanner, o *olliefile.File) error
 		return fmt.Errorf("GetWords Error, Scanner is empty\n")
 	}
 
+	// We will eventually get this from the config
+	shouldSpellcheck := true
 	for s.Scan() {
 		if s.Text() == "." {
 			break
 		}
-		// Spellchecking enabled at the moment
-		spelling <- strings.Fields(s.Text())
-		for {
+
+		// set shouldSpellcheck to true to turn on spellchecking after each entry
+		// currently there is a bug printing ,,,,,,,word1,,,,,word2 etc...
+		if shouldSpellcheck && len(s.Text()) >= 3 {
+			spelling <- strings.Fields(s.Text())
+			fmt.Println("spellchecking...")
 			val := <-spelling
-			fmt.Println(val)
-			if len(val) <= 0 {
-				break
-			}
-			fmt.Println("spellchecker suggestions:", val)
+
+			fmt.Printf("suggestions: %s\n", strings.Join(val, ", "))
 		}
 		o.Lines = append(o.Lines, s.Text())
 		o.LineCount += 1
@@ -83,46 +86,46 @@ func execCommand(executor <-chan string, receiver chan<- error,
 	done <-chan string, spelling chan []string, s *bufio.Scanner, o *olliefile.File) {
 	for {
 		select {
-		case val := <- executor:
-		c := strings.Split(val, " ")
+		case val := <-executor:
+			c := strings.Split(val, " ")
 
-		cmdLen := len(c)
-		if cmdLen > 2 {
-			receiver <- errors.New("Invalid command/parameters\n")
-		}
-
-		cmd := c[0]
-		param := ""
-		if cmdLen > 1 {
-			param = c[1]
-		}
-
-		switch cmd {
-		case "a":
-			err := getWords(spelling, s, o)
-			if err != nil {
-				receiver <- err
+			cmdLen := len(c)
+			if cmdLen > 2 {
+				receiver <- errors.New("Invalid command/parameters\n")
 			}
-			receiver <- nil
-		case "w":
-			if param != "" {
-				o.Name = param
-				err := o.CreateFile()
+
+			cmd := c[0]
+			param := ""
+			if cmdLen > 1 {
+				param = c[1]
+			}
+
+			switch cmd {
+			case "a":
+				err := getWords(spelling, s, o)
 				if err != nil {
 					receiver <- err
 				}
-			}
+				receiver <- nil
+			case "w":
+				if param != "" {
+					o.Name = param
+					err := o.CreateFile()
+					if err != nil {
+						receiver <- err
+					}
+				}
 
-			bytes, err := o.WriteFile()
-			fmt.Printf("Wrote %d bytes to %s\n", bytes, o.Name)
-			receiver <- err
-		case "i":
-			fmt.Println(o)
-			receiver <- nil
-		default:
-			receiver <- errors.New("unknown command")
-		}
-		case <- done:
+				bytes, err := o.WriteFile()
+				fmt.Printf("Wrote %d bytes to %s\n", bytes, o.Name)
+				receiver <- err
+			case "i":
+				fmt.Println(o)
+				receiver <- nil
+			default:
+				receiver <- errors.New("unknown command")
+			}
+		case <-done:
 			return
 		}
 	}
@@ -157,8 +160,8 @@ func main() {
 
 	ws := bufio.NewScanner(os.Stdin)
 
-	executor := make(chan string, 1) // executes the instructions
-	receiver := make(chan error, 1) // receives errors, error handling
+	executor := make(chan string, 1)   // executes the instructions
+	receiver := make(chan error, 1)    // receives errors, error handling
 	spelling := make(chan []string, 1) // spellchecker
 
 	// channel to signify completion
