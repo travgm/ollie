@@ -50,44 +50,46 @@ func execSpellchecker(channel Channels) {
 func execCommand(channel Channels, s *bufio.Scanner, o *olliefile.File) {
 	for {
 		select {
-		case val := <-channel.executor:
-			c := strings.Split(val, " ")
+		case val, ok := <-channel.executor:
+			if ok {
+				c := strings.Split(val, " ")
 
-			cmdLen := len(c)
-			if cmdLen > 2 {
-				fmt.Errorf("Invalid command/parameters\n")
-			}
-
-			cmd := c[0]
-			param := ""
-			if cmdLen > 1 {
-				param = c[1]
-			}
-
-			switch cmd {
-			case "a":
-				err := getWords(channel, s, o)
-				if err != nil {
-					fmt.Println(err)
+				cmdLen := len(c)
+				if cmdLen > 2 {
+					fmt.Errorf("Invalid command/parameters\n")
 				}
-			case "w":
-				if param != "" {
-					o.Name = param
-					err := o.CreateFile()
+
+				cmd := c[0]
+				param := ""
+				if cmdLen > 1 {
+					param = c[1]
+				}
+
+				switch cmd {
+				case "a":
+					err := getWords(channel, s, o)
 					if err != nil {
 						fmt.Println(err)
 					}
-				}
+				case "w":
+					if param != "" {
+						o.Name = param
+						err := o.CreateFile()
+						if err != nil {
+							fmt.Println(err)
+						}
+					}
 
-				bytes, err := o.WriteFile()
-				fmt.Printf("Wrote %d bytes to %s\n", bytes, o.Name)
-				if err != nil {
-					fmt.Println(err)
+					bytes, err := o.WriteFile()
+					fmt.Printf("Wrote %d bytes to %s\n", bytes, o.Name)
+					if err != nil {
+						fmt.Println(err)
+					}
+				case "i":
+					fmt.Println(o)
+				default:
+					fmt.Println("unknown command")
 				}
-			case "i":
-				fmt.Println(o)
-			default:
-				fmt.Println("unknown command")
 			}
 		case <-channel.done:
 			return
