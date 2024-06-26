@@ -25,7 +25,7 @@ func execStateReceiver(receiver <-chan error, done <-chan string) {
 	}
 }
 
-func execSpellchecker(spelling chan []string, done <-chan string) {
+func execSpellchecker(spelling <-chan []string, spellres chan<- []string, done <-chan string) {
 	dict := spellcheck.Dict{WordFile: "/usr/share/dict/words", MaxSuggest: 3}
 	err := dict.LoadWordlist()
 	if err != nil {
@@ -36,24 +36,25 @@ func execSpellchecker(spelling chan []string, done <-chan string) {
 		select {
 		// We received a message to the spellchecker. We spell check the slice
 		// and send back a slice that has suggestions.
-		case words := <-spelling:
-			suggestion := make([]string, 1)
-			for _, word := range words {
-				vals, err := dict.CheckWord(word)
-				if err != nil {
-					fmt.Println(err)
-					continue
+		case words, ok := <-spelling:
+			if ok {
+				suggestion := make([]string, 1)
+				for _, word := range words {
+					vals, err := dict.CheckWord(word)
+					if err != nil || len(vals) < 1 {
+						continue
+					}
+					suggestion = append(suggestion, vals...)
 				}
-				suggestion = append(suggestion, vals...)
+				spellres <- suggestion
 			}
-			spelling <- suggestion
 		case <-done:
 			return
 		}
 	}
 }
 
-func execCommand(executor <-chan string, receiver chan<- error,
+func execCommand(executor <-chan string, receiver chan<- error, spellres <-chan []string,
 	done <-chan string, spelling chan []string, s *bufio.Scanner, o *olliefile.File) {
 	for {
 		select {
@@ -73,7 +74,7 @@ func execCommand(executor <-chan string, receiver chan<- error,
 
 			switch cmd {
 			case "a":
-				err := getWords(spelling, s, o)
+				err := getWords(spelling, spellres, s, o)
 				if err != nil {
 					receiver <- err
 				}
@@ -102,7 +103,7 @@ func execCommand(executor <-chan string, receiver chan<- error,
 	}
 }
 
-func getWords(spelling chan []string, s *bufio.Scanner, o *olliefile.File) error {
+func getWords(spelling chan []string, spellres <-chan []string, s *bufio.Scanner, o *olliefile.File) error {
 	if s == nil {
 		return fmt.Errorf("GetWords Error, Scanner is empty\n")
 	}
@@ -117,22 +118,22 @@ func getWords(spelling chan []string, s *bufio.Scanner, o *olliefile.File) error
 		if shouldSpellcheck && len(s.Text()) >= 3 {
 			spelling <- strings.Fields(s.Text())
 			fmt.Println("spellchecking...")
-			val := <-spelling
+			val, ok := <-spellres
 
 			// Print suggestions
-			if len(val) > 0 {
-				count := 1
+			count := 1
+			if len(val) > 0 && ok {
 				for _, suggest := range val {
-					// Need to find out why this is happening
-					if suggest == "" {
-						continue
+					if suggest != "" {
+						fmt.Printf(" %d:%s", count, suggest)
+						count += 1
 					}
-					fmt.Printf(" %d:%s", count, suggest)
-					count += 1
 				}
-				fmt.Println("\n")
-			} else {
-				fmt.Println("no suggestions")
+				if count == 1 {
+					fmt.Printf("no suggestions\n")
+				} else {
+					fmt.Println("")
+}
 			}
 		}
 		o.Lines = append(o.Lines, s.Text())
@@ -175,18 +176,19 @@ func main() {
 	executor := make(chan string, 1)   // executes the instructions
 	receiver := make(chan error, 1)    // receives errors, error handling
 	spelling := make(chan []string, 1) // spellchecker
+	spellres := make(chan []string, 1) // results from the spellchecker
 
 	// channel to signify completion
 	done := make(chan string, 1)
 
 	// TODO: Move channels to a struct? so we can pass the struct around instead of
 	// way to many channels
-	go execCommand(executor, receiver, done, spelling, ws, of)
-	go execSpellchecker(spelling, done)
+	go execCommand(executor, receiver, spellres, done, spelling, ws, of)
+	go execSpellchecker(spelling, spellres, done)
 	go execStateReceiver(receiver, done)
 
 	for {
-		getWords(spelling, ws, of)
+		getWords(spelling, spellres, ws, of)
 		fmt.Print("? ")
 		ws.Scan()
 		in := ws.Text()

@@ -5,6 +5,7 @@ import (
 	"math"
 	"os"
 	"slices"
+	"strings"
 )
 
 // Dict holds information regarding the dictionary we have loaded and some
@@ -37,13 +38,17 @@ func (d *Dict) LoadWordlist() error {
 
 func (d *Dict) CheckWord(word string) ([]string, error) {
 	wordChoices := make([]string, 1)
-	bestDistance := math.MaxFloat64
-	var bestWord string
+
+	if word == "" || word == " " || slices.Contains(d.dictionary, word) {
+		return nil, nil
+	}
 
 	// This needs to be refactored as this will have horrible runtime as we iterate the
 	// dictionary d.MaxSuggest amount of times to find the best words to fill the
 	// suggestions
 	for _ = range d.MaxSuggest {
+		bestWord := ""
+		bestDistance := math.MaxFloat64
 		for _, w := range d.dictionary {
 			if slices.Contains(wordChoices, w) {
 				continue
@@ -55,9 +60,8 @@ func (d *Dict) CheckWord(word string) ([]string, error) {
 			}
 		}
 
-		if slices.Contains(wordChoices, bestWord) == false &&
-bestWord != word {
-			wordChoices = append(wordChoices, bestWord)
+		if slices.Contains(wordChoices, bestWord) == false {
+			wordChoices = append(wordChoices, strings.TrimSpace(bestWord))
 
 		}
 
