@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -12,20 +11,14 @@ import (
 	"git.sr.ht/~travgm/ollie/tree/develop/spellcheck"
 )
 
-func execStateReceiver(receiver <-chan error, done <-chan string) {
-	for {
-		select {
-		case err := <-receiver:
-			if err != nil {
-				fmt.Println(err)
-			}
-		case <-done:
-			return
-		}
-	}
+type Channels struct {
+	executor chan string
+	spelling chan []string
+	spellres chan []string
+	done     chan string
 }
 
-func execSpellchecker(spelling <-chan []string, spellres chan<- []string, done <-chan string) {
+func execSpellchecker(channel Channels) {
 	dict := spellcheck.Dict{WordFile: "/usr/share/dict/words", MaxSuggest: 3}
 	err := dict.LoadWordlist()
 	if err != nil {
@@ -36,7 +29,7 @@ func execSpellchecker(spelling <-chan []string, spellres chan<- []string, done <
 		select {
 		// We received a message to the spellchecker. We spell check the slice
 		// and send back a slice that has suggestions.
-		case words, ok := <-spelling:
+		case words, ok := <-channel.spelling:
 			if ok {
 				suggestion := make([]string, 1)
 				for _, word := range words {
@@ -46,24 +39,23 @@ func execSpellchecker(spelling <-chan []string, spellres chan<- []string, done <
 					}
 					suggestion = append(suggestion, vals...)
 				}
-				spellres <- suggestion
+				channel.spellres <- suggestion
 			}
-		case <-done:
+		case <-channel.done:
 			return
 		}
 	}
 }
 
-func execCommand(executor <-chan string, receiver chan<- error, spellres <-chan []string,
-	done <-chan string, spelling chan []string, s *bufio.Scanner, o *olliefile.File) {
+func execCommand(channel Channels, s *bufio.Scanner, o *olliefile.File) {
 	for {
 		select {
-		case val := <-executor:
+		case val := <-channel.executor:
 			c := strings.Split(val, " ")
 
 			cmdLen := len(c)
 			if cmdLen > 2 {
-				receiver <- errors.New("Invalid command/parameters\n")
+				fmt.Errorf("Invalid command/parameters\n")
 			}
 
 			cmd := c[0]
@@ -74,36 +66,36 @@ func execCommand(executor <-chan string, receiver chan<- error, spellres <-chan 
 
 			switch cmd {
 			case "a":
-				err := getWords(spelling, spellres, s, o)
+				err := getWords(channel, s, o)
 				if err != nil {
-					receiver <- err
+					fmt.Println(err)
 				}
-				receiver <- nil
 			case "w":
 				if param != "" {
 					o.Name = param
 					err := o.CreateFile()
 					if err != nil {
-						receiver <- err
+						fmt.Println(err)
 					}
 				}
 
 				bytes, err := o.WriteFile()
 				fmt.Printf("Wrote %d bytes to %s\n", bytes, o.Name)
-				receiver <- err
+				if err != nil {
+					fmt.Println(err)
+				}
 			case "i":
 				fmt.Println(o)
-				receiver <- nil
 			default:
-				receiver <- errors.New("unknown command")
+				fmt.Println("unknown command")
 			}
-		case <-done:
+		case <-channel.done:
 			return
 		}
 	}
 }
 
-func getWords(spelling chan []string, spellres <-chan []string, s *bufio.Scanner, o *olliefile.File) error {
+func getWords(channel Channels, s *bufio.Scanner, o *olliefile.File) error {
 	if s == nil {
 		return fmt.Errorf("GetWords Error, Scanner is empty\n")
 	}
@@ -116,9 +108,9 @@ func getWords(spelling chan []string, spellres <-chan []string, s *bufio.Scanner
 		}
 
 		if shouldSpellcheck && len(s.Text()) >= 3 {
-			spelling <- strings.Fields(s.Text())
+			channel.spelling <- strings.Fields(s.Text())
 			fmt.Println("spellchecking...")
-			val, ok := <-spellres
+			val, ok := <-channel.spellres
 
 			// Print suggestions
 			count := 1
@@ -133,7 +125,7 @@ func getWords(spelling chan []string, spellres <-chan []string, s *bufio.Scanner
 					fmt.Printf("no suggestions\n")
 				} else {
 					fmt.Println("")
-}
+				}
 			}
 		}
 		o.Lines = append(o.Lines, s.Text())
@@ -173,29 +165,25 @@ func main() {
 
 	ws := bufio.NewScanner(os.Stdin)
 
-	executor := make(chan string, 1)   // executes the instructions
-	receiver := make(chan error, 1)    // receives errors, error handling
-	spelling := make(chan []string, 1) // spellchecker
-	spellres := make(chan []string, 1) // results from the spellchecker
+	channels := Channels{
+		executor: make(chan string, 1),
+		spelling: make(chan []string, 1),
+		spellres: make(chan []string, 1),
+		done:     make(chan string, 1),
+	}
 
-	// channel to signify completion
-	done := make(chan string, 1)
-
-	// TODO: Move channels to a struct? so we can pass the struct around instead of
-	// way to many channels
-	go execCommand(executor, receiver, spellres, done, spelling, ws, of)
-	go execSpellchecker(spelling, spellres, done)
-	go execStateReceiver(receiver, done)
+	go execCommand(channels, ws, of)
+	go execSpellchecker(channels)
 
 	for {
-		getWords(spelling, spellres, ws, of)
+		getWords(channels, ws, of)
 		fmt.Print("? ")
 		ws.Scan()
 		in := ws.Text()
 		if in == "q" {
-			close(done)
+			close(channels.done)
 			break
 		}
-		executor <- in
+		channels.executor <- in
 	}
 }
