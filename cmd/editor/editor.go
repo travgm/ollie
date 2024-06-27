@@ -12,9 +12,10 @@ import (
 )
 
 type Channels struct {
-	spelling chan []string
-	spellres chan []string
-	done     chan string
+	shouldSpellcheck bool
+	spelling         chan []string
+	spellres         chan []string
+	done             chan string
 }
 
 func execSpellchecker(channel Channels) {
@@ -46,7 +47,7 @@ func execSpellchecker(channel Channels) {
 	}
 }
 
-func runCommand(channel Channels, cmd string, s *bufio.Scanner, o *olliefile.File) {
+func runCommand(channel *Channels, cmd string, s *bufio.Scanner, o *olliefile.File) {
 
 exitLoop:
 
@@ -84,6 +85,15 @@ exitLoop:
 			}
 		case "i":
 			fmt.Println(o)
+		case "s":
+			if param == "off" {
+				channel.shouldSpellcheck = false
+			} else if param == "on" {
+				channel.shouldSpellcheck = true
+			} else {
+				fmt.Println("valid parameter for spellcheck is 'on' or 'off'")
+			}
+			break exitLoop
 		default:
 			fmt.Println("unknown command")
 		}
@@ -96,28 +106,27 @@ func getWords(channel Channels, s *bufio.Scanner, o *olliefile.File) error {
 	}
 
 	// We will eventually get this from the config
-	shouldSpellcheck := true
 	for s.Scan() {
 		if s.Text() == "." {
 			break
 		}
 
-		if shouldSpellcheck && len(s.Text()) >= 3 {
+		if channel.shouldSpellcheck && len(s.Text()) >= 3 {
 			channel.spelling <- strings.Fields(s.Text())
 			fmt.Println("spellchecking...")
 			val, ok := <-channel.spellres
 
-			// Print suggestions
-			isSuggestion := false
+			count := 1
 			if len(val) > 0 && ok {
-				for i, suggest := range val {
+				fmt.Printf("corrections:")
+				for _, suggest := range val {
 					if suggest != "" {
-						fmt.Printf(" %d:%s", i, suggest)
-						isSuggestion = true
+						fmt.Printf(" %d:%s", count, suggest)
+						count += 1
 					}
 				}
-				if !isSuggestion {
-					fmt.Printf("no suggestions\n")
+				if count == 1 {
+					fmt.Printf(" no suggestions\n")
 				} else {
 					fmt.Println("")
 				}
@@ -155,15 +164,17 @@ func main() {
 
 	cf, of := initEditor(os.Args)
 	if cf != nil {
-		fmt.Println(cf)
+		// Load struct with configs
+		_ = cf
 	}
 
 	ws := bufio.NewScanner(os.Stdin)
 
 	channels := Channels{
-		spelling: make(chan []string, 1),
-		spellres: make(chan []string, 1),
-		done:     make(chan string, 1),
+		shouldSpellcheck: true,
+		spelling:         make(chan []string, 1),
+		spellres:         make(chan []string, 1),
+		done:             make(chan string, 1),
 	}
 
 	go execSpellchecker(channels)
@@ -177,6 +188,6 @@ func main() {
 			close(channels.done)
 			break
 		}
-		runCommand(channels, in, ws, of)
+		runCommand(&channels, in, ws, of)
 	}
 }
