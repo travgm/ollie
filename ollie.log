@@ -1,0 +1,120 @@
+confparser: 2024/06/26 17:42:10 Logging started at 2024-06-26 17:42:10
+confparser: 2024/06/26 17:42:10 started parsing config
+confparser: 2024/06/26 17:42:10 2024-06-26 17:42:10: parsing line: # Default configuration file for the ollie editor
+confparser: 2024/06/26 17:42:10 current token: {3 # Default configuration file for the ollie editor 1}
+confparser: 2024/06/26 17:42:10 2024-06-26 17:42:10: parsing line: spellcheck = true
+confparser: 2024/06/26 17:42:10 tokenizer line should be val or key: spellcheck = true
+confparser: 2024/06/26 17:42:10 2024-06-26 17:42:10: parsing line: dictionary = /usr/share/dict/words
+confparser: 2024/06/26 17:42:10 tokenizer line should be val or key: dictionary = /usr/share/dict/words
+confparser: 2024/06/26 17:42:10 2024-06-26 17:42:10: parsing line: 
+confparser: 2024/06/26 17:42:10 2024-06-26 17:42:10: parsing line: append-default = true
+confparser: 2024/06/26 17:42:10 tokenizer line should be val or key: append-default = true
+confparser: 2024/06/26 17:42:10 current token: {1  0}
+confparser: 2024/06/26 17:53:38 Logging started at 2024-06-26 17:53:38
+confparser: 2024/06/26 17:53:38 started parsing config
+confparser: 2024/06/26 17:53:38 2024-06-26 17:53:38: parsing line: # Default configuration file for the ollie editor
+confparser: 2024/06/26 17:53:38 current token: {3 # Default configuration file for the ollie editor 1}
+confparser: 2024/06/26 17:53:38 2024-06-26 17:53:38: parsing line: spellcheck = true
+confparser: 2024/06/26 17:53:38 tokenizer line should be val or key: spellcheck = true
+confparser: 2024/06/26 17:53:38 2024-06-26 17:53:38: parsing line: dictionary = /usr/share/dict/words
+confparser: 2024/06/26 17:53:38 tokenizer line should be val or key: dictionary = /usr/share/dict/words
+confparser: 2024/06/26 17:53:38 2024-06-26 17:53:38: parsing line: 
+confparser: 2024/06/26 17:53:38 2024-06-26 17:53:38: parsing line: append-default = true
+confparser: 2024/06/26 17:53:38 tokenizer line should be val or key: append-default = true
+confparser: 2024/06/26 17:53:38 current token: {1  0}
+confparser: 2024/06/26 19:26:55 Logging started at 2024-06-26 19:26:55
+confparser: 2024/06/26 19:26:55 started parsing config
+confparser: 2024/06/26 19:26:55 2024-06-26 19:26:55: parsing line: # Default configuration file for the ollie editor
+confparser: 2024/06/26 19:26:55 current token: {3 # Default configuration file for the ollie editor 1}
+confparser: 2024/06/26 19:26:55 2024-06-26 19:26:55: parsing line: spellcheck = true
+confparser: 2024/06/26 19:26:55 tokenizer line should be val or key: spellcheck = true
+confparser: 2024/06/26 19:26:55 2024-06-26 19:26:55: parsing line: dictionary = /usr/share/dict/words
+confparser: 2024/06/26 19:26:55 tokenizer line should be val or key: dictionary = /usr/share/dict/words
+confparser: 2024/06/26 19:26:55 2024-06-26 19:26:55: parsing line: 
+confparser: 2024/06/26 19:26:55 2024-06-26 19:26:55: parsing line: append-default = true
+confparser: 2024/06/26 19:26:55 tokenizer line should be val or key: append-default = true
+confparser: 2024/06/26 19:26:55 current token: {1  0}
+confparser: 2024/06/26 19:28:09 Logging started at 2024-06-26 19:28:09
+confparser: 2024/06/26 19:28:09 started parsing config
+confparser: 2024/06/26 19:28:09 2024-06-26 19:28:09: parsing line: # Default configuration file for the ollie editor
+confparser: 2024/06/26 19:28:09 current token: {3 # Default configuration file for the ollie editor 1}
+confparser: 2024/06/26 19:28:09 2024-06-26 19:28:09: parsing line: spellcheck = true
+confparser: 2024/06/26 19:28:09 tokenizer line should be val or key: spellcheck = true
+confparser: 2024/06/26 19:28:09 2024-06-26 19:28:09: parsing line: dictionary = /usr/share/dict/words
+confparser: 2024/06/26 19:28:09 tokenizer line should be val or key: dictionary = /usr/share/dict/words
+confparser: 2024/06/26 19:28:09 2024-06-26 19:28:09: parsing line: 
+confparser: 2024/06/26 19:28:09 2024-06-26 19:28:09: parsing line: append-default = true
+confparser: 2024/06/26 19:28:09 tokenizer line should be val or key: append-default = true
+confparser: 2024/06/26 19:28:09 current token: {1  0}
+confparser: 2024/06/26 19:31:09 Logging started at 2024-06-26 19:31:09
+confparser: 2024/06/26 19:31:09 started parsing config
+confparser: 2024/06/26 19:31:09 2024-06-26 19:31:09: parsing line: # Default configuration file for the ollie editor
+confparser: 2024/06/26 19:31:09 current token: {3 # Default configuration file for the ollie editor 1}
+confparser: 2024/06/26 19:31:09 2024-06-26 19:31:09: parsing line: spellcheck = true
+confparser: 2024/06/26 19:31:09 tokenizer line should be val or key: spellcheck = true
+confparser: 2024/06/26 19:31:09 2024-06-26 19:31:09: parsing line: dictionary = /usr/share/dict/words
+confparser: 2024/06/26 19:31:09 tokenizer line should be val or key: dictionary = /usr/share/dict/words
+confparser: 2024/06/26 19:31:09 2024-06-26 19:31:09: parsing line: 
+confparser: 2024/06/26 19:31:09 2024-06-26 19:31:09: parsing line: append-default = true
+confparser: 2024/06/26 19:31:09 tokenizer line should be val or key: append-default = true
+confparser: 2024/06/26 19:31:09 current token: {1  0}
+confparser: 2024/06/26 19:32:33 Logging started at 2024-06-26 19:32:33
+confparser: 2024/06/26 19:32:33 started parsing config
+confparser: 2024/06/26 19:32:33 2024-06-26 19:32:33: parsing line: # Default configuration file for the ollie editor
+confparser: 2024/06/26 19:32:33 current token: {3 # Default configuration file for the ollie editor 1}
+confparser: 2024/06/26 19:32:33 2024-06-26 19:32:33: parsing line: spellcheck = true
+confparser: 2024/06/26 19:32:33 tokenizer line should be val or key: spellcheck = true
+confparser: 2024/06/26 19:32:33 2024-06-26 19:32:33: parsing line: dictionary = /usr/share/dict/words
+confparser: 2024/06/26 19:32:33 tokenizer line should be val or key: dictionary = /usr/share/dict/words
+confparser: 2024/06/26 19:32:33 2024-06-26 19:32:33: parsing line: 
+confparser: 2024/06/26 19:32:33 2024-06-26 19:32:33: parsing line: append-default = true
+confparser: 2024/06/26 19:32:33 tokenizer line should be val or key: append-default = true
+confparser: 2024/06/26 19:32:33 current token: {1  0}
+confparser: 2024/06/26 19:33:10 Logging started at 2024-06-26 19:33:10
+confparser: 2024/06/26 19:33:10 started parsing config
+confparser: 2024/06/26 19:33:10 2024-06-26 19:33:10: parsing line: # Default configuration file for the ollie editor
+confparser: 2024/06/26 19:33:10 current token: {3 # Default configuration file for the ollie editor 1}
+confparser: 2024/06/26 19:33:10 2024-06-26 19:33:10: parsing line: spellcheck = true
+confparser: 2024/06/26 19:33:10 tokenizer line should be val or key: spellcheck = true
+confparser: 2024/06/26 19:33:10 2024-06-26 19:33:10: parsing line: dictionary = /usr/share/dict/words
+confparser: 2024/06/26 19:33:10 tokenizer line should be val or key: dictionary = /usr/share/dict/words
+confparser: 2024/06/26 19:33:10 2024-06-26 19:33:10: parsing line: 
+confparser: 2024/06/26 19:33:10 2024-06-26 19:33:10: parsing line: append-default = true
+confparser: 2024/06/26 19:33:10 tokenizer line should be val or key: append-default = true
+confparser: 2024/06/26 19:33:10 current token: {1  0}
+confparser: 2024/06/26 19:36:17 Logging started at 2024-06-26 19:36:17
+confparser: 2024/06/26 19:36:17 started parsing config
+confparser: 2024/06/26 19:36:17 2024-06-26 19:36:17: parsing line: # Default configuration file for the ollie editor
+confparser: 2024/06/26 19:36:17 current token: {3 # Default configuration file for the ollie editor 1}
+confparser: 2024/06/26 19:36:17 2024-06-26 19:36:17: parsing line: spellcheck = true
+confparser: 2024/06/26 19:36:17 tokenizer line should be val or key: spellcheck = true
+confparser: 2024/06/26 19:36:17 2024-06-26 19:36:17: parsing line: dictionary = /usr/share/dict/words
+confparser: 2024/06/26 19:36:17 tokenizer line should be val or key: dictionary = /usr/share/dict/words
+confparser: 2024/06/26 19:36:17 2024-06-26 19:36:17: parsing line: 
+confparser: 2024/06/26 19:36:17 2024-06-26 19:36:17: parsing line: append-default = true
+confparser: 2024/06/26 19:36:17 tokenizer line should be val or key: append-default = true
+confparser: 2024/06/26 19:36:17 current token: {1  0}
+confparser: 2024/06/26 19:37:26 Logging started at 2024-06-26 19:37:26
+confparser: 2024/06/26 19:37:26 started parsing config
+confparser: 2024/06/26 19:37:26 2024-06-26 19:37:26: parsing line: # Default configuration file for the ollie editor
+confparser: 2024/06/26 19:37:26 current token: {3 # Default configuration file for the ollie editor 1}
+confparser: 2024/06/26 19:37:26 2024-06-26 19:37:26: parsing line: spellcheck = true
+confparser: 2024/06/26 19:37:26 tokenizer line should be val or key: spellcheck = true
+confparser: 2024/06/26 19:37:26 2024-06-26 19:37:26: parsing line: dictionary = /usr/share/dict/words
+confparser: 2024/06/26 19:37:26 tokenizer line should be val or key: dictionary = /usr/share/dict/words
+confparser: 2024/06/26 19:37:26 2024-06-26 19:37:26: parsing line: 
+confparser: 2024/06/26 19:37:26 2024-06-26 19:37:26: parsing line: append-default = true
+confparser: 2024/06/26 19:37:26 tokenizer line should be val or key: append-default = true
+confparser: 2024/06/26 19:37:26 current token: {1  0}
+confparser: 2024/06/26 19:41:58 Logging started at 2024-06-26 19:41:58
+confparser: 2024/06/26 19:41:58 started parsing config
+confparser: 2024/06/26 19:41:58 2024-06-26 19:41:58: parsing line: # Default configuration file for the ollie editor
+confparser: 2024/06/26 19:41:58 current token: {3 # Default configuration file for the ollie editor 1}
+confparser: 2024/06/26 19:41:58 2024-06-26 19:41:58: parsing line: spellcheck = true
+confparser: 2024/06/26 19:41:58 tokenizer line should be val or key: spellcheck = true
+confparser: 2024/06/26 19:41:58 2024-06-26 19:41:58: parsing line: dictionary = /usr/share/dict/words
+confparser: 2024/06/26 19:41:58 tokenizer line should be val or key: dictionary = /usr/share/dict/words
+confparser: 2024/06/26 19:41:58 2024-06-26 19:41:58: parsing line: 
+confparser: 2024/06/26 19:41:58 2024-06-26 19:41:58: parsing line: append-default = true
+confparser: 2024/06/26 19:41:58 tokenizer line should be val or key: append-default = true
+confparser: 2024/06/26 19:41:58 current token: {1  0}

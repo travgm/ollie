@@ -12,7 +12,6 @@ import (
 )
 
 type Channels struct {
-	executor chan string
 	spelling chan []string
 	spellres chan []string
 	done     chan string
@@ -47,52 +46,46 @@ func execSpellchecker(channel Channels) {
 	}
 }
 
-func execCommand(channel Channels, s *bufio.Scanner, o *olliefile.File) {
+func runCommand(channel Channels, cmd string, s *bufio.Scanner, o *olliefile.File) {
+
+exitLoop:
+
 	for {
-		select {
-		case val, ok := <-channel.executor:
-			if ok {
-				c := strings.Split(val, " ")
+		c := strings.Split(cmd, " ")
 
-				cmdLen := len(c)
-				if cmdLen > 2 {
-					fmt.Errorf("Invalid command/parameters\n")
-				}
+		cmdLen := len(c)
+		if cmdLen > 2 {
+			fmt.Errorf("Invalid command/parameters\n")
+		}
 
-				cmd := c[0]
-				param := ""
-				if cmdLen > 1 {
-					param = c[1]
-				}
+		cmd := c[0]
+		param := ""
+		if cmdLen > 1 {
+			param = c[1]
+		}
 
-				switch cmd {
-				case "a":
-					err := getWords(channel, s, o)
-					if err != nil {
-						fmt.Println(err)
-					}
-				case "w":
-					if param != "" {
-						o.Name = param
-						err := o.CreateFile()
-						if err != nil {
-							fmt.Println(err)
-						}
-					}
-
-					bytes, err := o.WriteFile()
-					fmt.Printf("Wrote %d bytes to %s\n", bytes, o.Name)
-					if err != nil {
-						fmt.Println(err)
-					}
-				case "i":
-					fmt.Println(o)
-				default:
-					fmt.Println("unknown command")
+		switch cmd {
+		case "a":
+			// Drops us back to the main and getWords() is executed
+			break exitLoop
+		case "w":
+			if param != "" {
+				o.Name = param
+				err := o.CreateFile()
+				if err != nil {
+					fmt.Println(err)
 				}
 			}
-		case <-channel.done:
-			return
+
+			bytes, err := o.WriteFile()
+			fmt.Printf("Wrote %d bytes to %s\n", bytes, o.Name)
+			if err != nil {
+				fmt.Println(err)
+			}
+		case "i":
+			fmt.Println(o)
+		default:
+			fmt.Println("unknown command")
 		}
 	}
 }
@@ -115,15 +108,15 @@ func getWords(channel Channels, s *bufio.Scanner, o *olliefile.File) error {
 			val, ok := <-channel.spellres
 
 			// Print suggestions
-			count := 1
+			isSuggestion := false
 			if len(val) > 0 && ok {
-				for _, suggest := range val {
+				for i, suggest := range val {
 					if suggest != "" {
-						fmt.Printf(" %d:%s", count, suggest)
-						count += 1
+						fmt.Printf(" %d:%s", i, suggest)
+						isSuggestion = true
 					}
 				}
-				if count == 1 {
+				if !isSuggestion {
 					fmt.Printf("no suggestions\n")
 				} else {
 					fmt.Println("")
@@ -168,13 +161,11 @@ func main() {
 	ws := bufio.NewScanner(os.Stdin)
 
 	channels := Channels{
-		executor: make(chan string, 1),
 		spelling: make(chan []string, 1),
 		spellres: make(chan []string, 1),
 		done:     make(chan string, 1),
 	}
 
-	go execCommand(channels, ws, of)
 	go execSpellchecker(channels)
 
 	for {
@@ -186,6 +177,6 @@ func main() {
 			close(channels.done)
 			break
 		}
-		channels.executor <- in
+		runCommand(channels, in, ws, of)
 	}
 }
