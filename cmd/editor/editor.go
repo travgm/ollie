@@ -103,11 +103,13 @@ exitLoop:
 			if err != nil {
 				fmt.Printf("param must be a valid line number\n")
 			} else {
-					s.Scan()
-					err := o.UpdateLine(i, s.Text())
-					if err != nil {
-						fmt.Println(err)
-					}
+				s.Scan()
+				err := o.UpdateLine(i, s.Text())
+				if err != nil {
+					fmt.Println(err)
+				} else {
+					fmt.Printf("updated line %d\n", i)
+				}
 			}
 			break exitLoop
 		default:
@@ -116,8 +118,6 @@ exitLoop:
 		}
 	}
 }
-
-
 
 func getWords(channel Channels, s *bufio.Scanner, o *olliefile.File) error {
 	if s == nil {
