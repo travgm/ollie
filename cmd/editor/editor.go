@@ -49,73 +49,62 @@ func execSpellchecker(channel Channels) {
 }
 
 func runCommand(channel *Channels, cmd string, s *bufio.Scanner, o *olliefile.File) {
+	c := strings.Split(cmd, " ")
 
-exitLoop:
+	cmdLen := len(c)
+	if cmdLen > 2 {
+		fmt.Errorf("Invalid command/parameters\n")
+	}
 
-	for {
-		c := strings.Split(cmd, " ")
+	cmd = c[0]
+	param := ""
+	if cmdLen > 1 {
+		param = c[1]
+	}
 
-		cmdLen := len(c)
-		if cmdLen > 2 {
-			fmt.Errorf("Invalid command/parameters\n")
-		}
-
-		cmd := c[0]
-		param := ""
-		if cmdLen > 1 {
-			param = c[1]
-		}
-
-		switch cmd {
-		case "a":
-			// Drops us back to the main and getWords() is executed
-			break exitLoop
-		case "w":
-			if param != "" {
-				o.Name = param
-				err := o.CreateFile()
-				if err != nil {
-					fmt.Println(err)
-				}
-			}
-
-			bytes, err := o.WriteFile()
-			fmt.Printf("Wrote %d bytes to %s\n", bytes, o.Name)
+	switch cmd {
+	case "a":
+		break
+	case "w":
+		if param != "" {
+			o.Name = param
+			err := o.CreateFile()
 			if err != nil {
 				fmt.Println(err)
 			}
-			break exitLoop
-		case "i":
-			fmt.Println(o)
-			break exitLoop
-		case "p":
-			if param == "off" {
-				channel.shouldSpellcheck = false
-			} else if param == "on" {
-				channel.shouldSpellcheck = true
-			} else {
-				fmt.Println("valid parameter for spellcheck is 'on' or 'off'")
-			}
-			break exitLoop
-		case "f":
-			// Need to redo this, Seek works on bytes and not lines
-			i, err := strconv.ParseInt(param, 10, 32)
-			if err != nil {
-				fmt.Printf("param must be a valid line number\n")
-			} else {
-				s.Scan()
-				err := o.UpdateLine(i, s.Text())
-				if err != nil {
-					fmt.Println(err)
-				} else {
-					fmt.Printf("updated line %d\n", i)
-				}
-			}
-			break exitLoop
-		default:
-			fmt.Println("unknown command")
-			break exitLoop
 		}
+
+		bytes, err := o.WriteFile()
+		fmt.Printf("Wrote %d bytes to %s\n", bytes, o.Name)
+		if err != nil {
+			fmt.Println(err)
+		}
+	case "i":
+		fmt.Println(o)
+	case "p":
+		if param == "off" {
+			channel.shouldSpellcheck = false
+		} else if param == "on" {
+			channel.shouldSpellcheck = true
+		} else {
+			fmt.Println("valid parameter for spellcheck is 'on' or 'off'")
+		}
+	case "f":
+		// Need to redo this, Seek works on bytes and not lines
+		i, err := strconv.ParseInt(param, 10, 32)
+		if err != nil {
+			fmt.Printf("param must be a valid line number\n")
+		} else {
+			s.Scan()
+			err := o.UpdateLine(i, s.Text())
+			if err != nil {
+				fmt.Println(err)
+			} else {
+				fmt.Printf("updated line %d\n", i)
+			}
+		}
+	default:
+		fmt.Println("unknown command")
 	}
 }
 
