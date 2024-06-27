@@ -38,6 +38,27 @@ func (o *File) WriteFile() (int, error) {
 	return bytes, nil
 }
 
+func (o *File) UpdateLine(line int64, str string) error {
+	if line < 1 || line > int64(len(o.Lines)) {
+		return fmt.Errorf("invalid line number")
+	}
+
+	o.Lines[line-1] = str
+
+	err := o.FileHandle.Truncate(0)
+	if err != nil {
+		return err
+	}
+
+	_, err = o.FileHandle.Seek(0, 0)
+	if err != nil {
+		return err
+	}
+
+	_, err = o.WriteFile()
+	return err
+}
+
 func (o *File) CreateFile() error {
 	if o.Name == "" {
 		return fmt.Errorf("ERROR: No file name speified")
