@@ -43,7 +43,7 @@ func (o *File) CreateFile() error {
 		return fmt.Errorf("ERROR: No file name speified")
 	}
 
-	f, err := os.OpenFile(o.Name, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(o.Name, os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {
 		return err
 	}
