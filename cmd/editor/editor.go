@@ -10,6 +10,7 @@ import (
 	"git.sr.ht/~travgm/ollie/tree/develop/conf"
 	"git.sr.ht/~travgm/ollie/tree/develop/olliefile"
 	"git.sr.ht/~travgm/ollie/tree/develop/spellcheck"
+	"git.sr.ht/~travgm/ollie/tree/develop/version"
 )
 
 type State struct {
@@ -172,6 +173,11 @@ func initEditor(args []string) (State, error) {
 func main() {
 	if len(os.Args) < 1 || len(os.Args) > 2 {
 		fmt.Println("ollie <file>")
+		os.Exit(0)
+	}
+
+	if len(os.Args) == 2 && os.Args[1] == "--about" {
+		version.DisplayAbout()
 		os.Exit(0)
 	}
 
