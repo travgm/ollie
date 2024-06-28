@@ -25,14 +25,15 @@ type State struct {
 
 // Editor commands
 const (
-	WRITE_FILE   = "w"
-	APPEND       = "a"
-	FILE_INFO    = "i"
-	SPELLCHECK   = "p"
-	FIX_LINE     = "f"
-	EXEC_CMD     = "e"
-	QUIT_EDITOR  = "q"
-	COMMAND_MODE = "."
+	WRITE_FILE    = "w"
+	APPEND        = "a"
+	FILE_INFO     = "i"
+	SPELLCHECK    = "p"
+	FIX_LINE      = "f"
+	EXEC_CMD      = "e"
+	QUIT_EDITOR   = "q"
+	DEL_LAST_LINE = "d"
+	COMMAND_MODE  = "."
 )
 
 func runCommand(state *State) {
@@ -52,6 +53,37 @@ func runCommand(state *State) {
 	}
 
 	switch cmd {
+	case APPEND:
+		break
+	case FILE_INFO:
+		fmt.Println(state.ollie)
+	case SPELLCHECK:
+		switch param {
+		case "on":
+			state.channels.ShouldSpellcheck = true
+		case "off":
+			state.channels.ShouldSpellcheck = false
+		default:
+			fmt.Println("valid parameter for spellcheck is 'on' or 'off'")
+		}
+	case DEL_LAST_LINE:
+		line := strconv.Itoa(len(state.ollie.Lines))
+		err := state.ollie.UpdateLine(line, "")
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			state.ollie.Lines = state.ollie.Lines[:len(state.ollie.Lines)-1]
+			state.ollie.LineCount -= 1
+			fmt.Println("cleared line", line)
+		}
+	case FIX_LINE:
+		state.wordInput.Scan()
+		err := state.ollie.UpdateLine(param, state.wordInput.Text())
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Println("updated line", param)
+		}
 	case EXEC_CMD:
 		if len(c) <= 1 {
 			fmt.Println("'e' needs a parameter to run in the shell")
@@ -64,9 +96,6 @@ func runCommand(state *State) {
 		} else {
 			fmt.Println(string(res))
 		}
-	case APPEND:
-		// We just break here because how the main loop is designed it drops us back to the getWords() function
-		break
 	case WRITE_FILE:
 		if param != "" {
 			state.ollie.Name = param
@@ -88,30 +117,6 @@ func runCommand(state *State) {
 			fmt.Println(err)
 		} else {
 			fmt.Printf("Wrote %d bytes to %s\n", bytes, state.ollie.Name)
-		}
-	case FILE_INFO:
-		fmt.Println(state.ollie)
-	case SPELLCHECK:
-		switch param {
-		case "on":
-			state.channels.ShouldSpellcheck = true
-		case "off":
-			state.channels.ShouldSpellcheck = false
-		default:
-			fmt.Println("valid parameter for spellcheck is 'on' or 'off'")
-		}
-	case FIX_LINE:
-		i, err := strconv.ParseInt(param, 10, 32)
-		if err != nil {
-			fmt.Printf("param must be a valid line number\n")
-		} else {
-			state.wordInput.Scan()
-			err := state.ollie.UpdateLine(i, state.wordInput.Text())
-			if err != nil {
-				fmt.Println(err)
-			} else {
-				fmt.Printf("updated line %d\n", i)
-			}
 		}
 	default:
 		fmt.Println("unknown command")
@@ -233,9 +238,10 @@ func run() error {
 		err := getWords(&state)
 		if err != nil {
 			fmt.Println(err)
+			close(state.channels.Done)
 			return err
 		}
-		fmt.Print("? ")
+		fmt.Print("@ ")
 		state.wordInput.Scan()
 		state.command = state.wordInput.Text()
 		if state.command == QUIT_EDITOR {

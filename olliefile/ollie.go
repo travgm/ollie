@@ -3,6 +3,7 @@ package olliefile
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -38,14 +39,19 @@ func (o *File) WriteFile() (int, error) {
 	return bytes, nil
 }
 
-func (o *File) UpdateLine(line int64, str string) error {
+func (o *File) UpdateLine(lineNumber string, str string) error {
+	line, err := strconv.ParseInt(lineNumber, 10, 32)
+	if err != nil {
+		return fmt.Errorf("param", err)
+	}
+
 	if line < 1 || line > int64(len(o.Lines)) {
 		return fmt.Errorf("invalid line number")
 	}
 
 	o.Lines[line-1] = str
 
-	err := o.FileHandle.Truncate(0)
+	err = o.FileHandle.Truncate(0)
 	if err != nil {
 		return err
 	}

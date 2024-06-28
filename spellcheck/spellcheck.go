@@ -7,6 +7,7 @@ import (
 	"os"
 	"slices"
 	"strings"
+	"sync"
 )
 
 // Dict holds information regarding the dictionary we have loaded and some
@@ -16,6 +17,7 @@ type Dict struct {
 	WordFile   string
 	dictionary []string
 	MaxSuggest int
+	mutex      sync.Mutex
 }
 
 type Channels struct {
@@ -45,6 +47,8 @@ func (d *Dict) LoadWordlist() error {
 }
 
 func (d *Dict) CheckWord(word string) ([]string, error) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
 	wordChoices := make([]string, 1)
 
 	if word == "" || word == " " || slices.Contains(d.dictionary, word) {
