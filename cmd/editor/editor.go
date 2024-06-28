@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 
@@ -29,6 +30,7 @@ const (
 	FILE_INFO    = "i"
 	SPELLCHECK   = "p"
 	FIX_LINE     = "f"
+	EXEC_CMD     = "e"
 	QUIT_EDITOR  = "q"
 	COMMAND_MODE = "."
 )
@@ -50,6 +52,18 @@ func runCommand(state *State) {
 	}
 
 	switch cmd {
+	case EXEC_CMD:
+		if len(c) <= 1 {
+			fmt.Println("'e' needs a parameter to run in the shell")
+			break
+		}
+		scmd := exec.Command(c[1], c[2:]...)
+		res, err := scmd.CombinedOutput()
+		if err != nil {
+			fmt.Println("exec failed:", err)
+		} else {
+			fmt.Println(string(res))
+		}
 	case APPEND:
 		// We just break here because how the main loop is designed it drops us back to the getWords() function
 		break
@@ -138,7 +152,7 @@ func getWords(state *State) error {
 		state.ollie.Lines = append(state.ollie.Lines, state.wordInput.Text())
 		state.ollie.LineCount += 1
 		state.ollie.WordCount += len(strings.Split(" ", state.wordInput.Text()))
-		fmt.Println(state.ollie.LineCount)
+		fmt.Printf("%d:%d\n", state.ollie.LineCount, len(state.wordInput.Text()))
 	}
 	return nil
 }
