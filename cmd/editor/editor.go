@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"os"
 	"strconv"
@@ -142,10 +143,10 @@ func getWords(state *State) error {
 	return nil
 }
 
-func initEditor(args []string) (State, error) {
+func initEditor(filename string, spell bool) (State, error) {
 	of := &olliefile.File{Name: "junk.ollie"}
-	if len(args) == 2 {
-		of.Name = args[1]
+	if filename != "" {
+		of.Name = filename
 		of.CreateFile()
 	}
 	config, err := conf.ParseConfig()
@@ -154,7 +155,7 @@ func initEditor(args []string) (State, error) {
 	}
 
 	spChannels := spellcheck.Channels{
-		ShouldSpellcheck: true,
+		ShouldSpellcheck: spell,
 		Spelling:         make(chan []string, 1),
 		Spellres:         make(chan []string, 1),
 		Done:             make(chan string, 1),
@@ -170,21 +171,46 @@ func initEditor(args []string) (State, error) {
 	return state, nil
 }
 
+func printUsage() {
+	fmt.Println("Usage: ollie <file>")
+	fmt.Println("Flags:")
+	flag.PrintDefaults()
+}
+
 func main() {
-	if len(os.Args) < 1 || len(os.Args) > 2 {
-		fmt.Println("ollie <file>")
-		os.Exit(0)
-	}
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Fprintf(os.Stderr, "Fatal error: %v\n", r)
+			os.Exit(1)
+		}
+	}()
 
-	if len(os.Args) == 2 && os.Args[1] == "--about" {
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
+	aboutFlag := flag.Bool("version", false, "Display version information")
+	spellFlag := flag.Bool("spcheck", false, "Turn spellchecking on, default is off")
+
+	flag.Parse()
+	if *aboutFlag {
 		version.DisplayAbout()
-		os.Exit(0)
+		return nil
 	}
 
-	state, err := initEditor(os.Args)
+	if flag.NArg() > 1 {
+		printUsage()
+		return fmt.Errorf("incorrect number of arguments")
+
+	}
+
+	state, err := initEditor(flag.Arg(0), *spellFlag)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return err
 	}
 
 	go spellcheck.ExecSpellchecker(state.channels)
@@ -193,7 +219,7 @@ func main() {
 		err := getWords(&state)
 		if err != nil {
 			fmt.Println(err)
-			break
+			return err
 		}
 		fmt.Print("? ")
 		state.wordInput.Scan()
@@ -204,4 +230,6 @@ func main() {
 		}
 		runCommand(&state)
 	}
+
+	return nil
 }
