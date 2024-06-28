@@ -2,6 +2,7 @@ package spellcheck
 
 import (
 	"bufio"
+	"fmt"
 	"math"
 	"os"
 	"slices"
@@ -15,6 +16,13 @@ type Dict struct {
 	WordFile   string
 	dictionary []string
 	MaxSuggest int
+}
+
+type Channels struct {
+	ShouldSpellcheck bool
+	Spelling         chan []string
+	Spellres         chan []string
+	Done             chan string
 }
 
 func (d *Dict) LoadWordlist() error {
@@ -108,4 +116,35 @@ func levDistance(word string, dictWord string) float64 {
 		}
 	}
 	return lm[len(word)][len(dictWord)]
+}
+
+// Go routine to handle spellchecking
+// Dictionary is hardcoded for now until we get config working
+func ExecSpellchecker(channel Channels) {
+	dict := Dict{WordFile: "/usr/share/dict/words", MaxSuggest: 3}
+	err := dict.LoadWordlist()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	for {
+		select {
+		// We received a message to the spellchecker. We spell check the slice
+		// and send back a slice that has suggestions.
+		case words, ok := <-channel.Spelling:
+			if ok {
+				suggestion := make([]string, 1)
+				for _, word := range words {
+					vals, err := dict.CheckWord(word)
+					if err != nil || len(vals) < 1 {
+						continue
+					}
+					suggestion = append(suggestion, vals...)
+				}
+				channel.Spellres <- suggestion
+			}
+		case <-channel.Done:
+			return
+		}
+	}
 }

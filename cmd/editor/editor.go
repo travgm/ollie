@@ -12,91 +12,75 @@ import (
 	"git.sr.ht/~travgm/ollie/tree/develop/spellcheck"
 )
 
-type Channels struct {
-	shouldSpellcheck bool
-	spelling         chan []string
-	spellres         chan []string
-	done             chan string
+// Holds editor state to be passed around
+type State struct {
+	channels  spellcheck.Channels
+	command   string
+	wordInput *bufio.Scanner
+	ollie     *olliefile.File
+	conf      *conf.Settings
 }
 
-func execSpellchecker(channel Channels) {
-	dict := spellcheck.Dict{WordFile: "/usr/share/dict/words", MaxSuggest: 3}
-	err := dict.LoadWordlist()
-	if err != nil {
-		fmt.Println(err)
-	}
+// Editor commands
+const (
+	WRITE_FILE   = "w"
+	APPEND       = "a"
+	FILE_INFO    = "i"
+	SPELLCHECK   = "p"
+	FIX_LINE     = "f"
+	QUIT_EDITOR  = "q"
+	COMMAND_MODE = "."
+)
 
-	for {
-		select {
-		// We received a message to the spellchecker. We spell check the slice
-		// and send back a slice that has suggestions.
-		case words, ok := <-channel.spelling:
-			if ok {
-				suggestion := make([]string, 1)
-				for _, word := range words {
-					vals, err := dict.CheckWord(word)
-					if err != nil || len(vals) < 1 {
-						continue
-					}
-					suggestion = append(suggestion, vals...)
-				}
-				channel.spellres <- suggestion
-			}
-		case <-channel.done:
-			return
-		}
-	}
-}
-
-func runCommand(channel *Channels, cmd string, s *bufio.Scanner, o *olliefile.File) {
-	c := strings.Split(cmd, " ")
+func runCommand(state *State) {
+	c := strings.Split(state.command, " ")
 
 	cmdLen := len(c)
 	if cmdLen > 2 {
 		fmt.Errorf("Invalid command/parameters\n")
 	}
 
-	cmd = c[0]
+	cmd := c[0]
 	param := ""
 	if cmdLen > 1 {
 		param = c[1]
 	}
 
 	switch cmd {
-	case "a":
+	case APPEND:
 		break
-	case "w":
+	case WRITE_FILE:
 		if param != "" {
-			o.Name = param
-			err := o.CreateFile()
+			state.ollie.Name = param
+			err := state.ollie.CreateFile()
 			if err != nil {
 				fmt.Println(err)
 			}
 		}
 
-		bytes, err := o.WriteFile()
-		fmt.Printf("Wrote %d bytes to %s\n", bytes, o.Name)
+		bytes, err := state.ollie.WriteFile()
+		fmt.Printf("Wrote %d bytes to %s\n", bytes, state.ollie.Name)
 		if err != nil {
 			fmt.Println(err)
 		}
-	case "i":
-		fmt.Println(o)
-	case "p":
-		if param == "off" {
-			channel.shouldSpellcheck = false
-		} else if param == "on" {
-			channel.shouldSpellcheck = true
-		} else {
+	case FILE_INFO:
+		fmt.Println(state.ollie)
+	case SPELLCHECK:
+		switch param {
+		case "on":
+			state.channels.ShouldSpellcheck = true
+		case "off":
+			state.channels.ShouldSpellcheck = false
+		default:
 			fmt.Println("valid parameter for spellcheck is 'on' or 'off'")
 		}
-	case "f":
-		// Need to redo this, Seek works on bytes and not lines
+	case FIX_LINE:
 		i, err := strconv.ParseInt(param, 10, 32)
 		if err != nil {
 			fmt.Printf("param must be a valid line number\n")
 		} else {
-			s.Scan()
-			err := o.UpdateLine(i, s.Text())
+			state.wordInput.Scan()
+			err := state.ollie.UpdateLine(i, state.wordInput.Text())
 			if err != nil {
 				fmt.Println(err)
 			} else {
@@ -108,20 +92,20 @@ func runCommand(channel *Channels, cmd string, s *bufio.Scanner, o *olliefile.Fi
 	}
 }
 
-func getWords(channel Channels, s *bufio.Scanner, o *olliefile.File) error {
-	if s == nil {
-		return fmt.Errorf("GetWords Error, Scanner is empty\n")
+func getWords(state *State) error {
+	if state == nil {
+		return fmt.Errorf("GetWords Error. State is null\n")
 	}
 
-	for s.Scan() {
-		if s.Text() == "." {
+	for state.wordInput.Scan() {
+		if state.wordInput.Text() == COMMAND_MODE {
 			break
 		}
 
-		if channel.shouldSpellcheck && len(s.Text()) >= 3 {
-			channel.spelling <- strings.Fields(s.Text())
+		if state.channels.ShouldSpellcheck && len(state.wordInput.Text()) >= 3 {
+			state.channels.Spelling <- strings.Fields(state.wordInput.Text())
 			fmt.Println("spellchecking...")
-			val, ok := <-channel.spellres
+			val, ok := <-state.channels.Spellres
 
 			count := 1
 			if len(val) > 0 && ok {
@@ -139,15 +123,15 @@ func getWords(channel Channels, s *bufio.Scanner, o *olliefile.File) error {
 				}
 			}
 		}
-		o.Lines = append(o.Lines, s.Text())
-		o.LineCount += 1
-		o.WordCount += len(strings.Split(" ", s.Text()))
-		fmt.Println(o.LineCount)
+		state.ollie.Lines = append(state.ollie.Lines, state.wordInput.Text())
+		state.ollie.LineCount += 1
+		state.ollie.WordCount += len(strings.Split(" ", state.wordInput.Text()))
+		fmt.Println(state.ollie.LineCount)
 	}
 	return nil
 }
 
-func initEditor(args []string) (*conf.Settings, *olliefile.File) {
+func initEditor(args []string) (State, error) {
 	of := &olliefile.File{Name: "junk.ollie"}
 	if len(args) == 2 {
 		of.Name = args[1]
@@ -155,12 +139,24 @@ func initEditor(args []string) (*conf.Settings, *olliefile.File) {
 	}
 	config, err := conf.ParseConfig()
 	if err != nil {
-		return nil, of
+		return State{}, err
 	}
 
-	_ = spellcheck.Dict{}
+	spChannels := spellcheck.Channels{
+		ShouldSpellcheck: true,
+		Spelling:         make(chan []string, 1),
+		Spellres:         make(chan []string, 1),
+		Done:             make(chan string, 1),
+	}
 
-	return config, of
+	state := State{
+		channels:  spChannels,
+		wordInput: bufio.NewScanner(os.Stdin),
+		ollie:     of,
+		conf:      config,
+	}
+
+	return state, nil
 }
 
 func main() {
@@ -169,32 +165,27 @@ func main() {
 		os.Exit(0)
 	}
 
-	cf, of := initEditor(os.Args)
-	if cf != nil {
-		// Load struct with configs
-		_ = cf
+	state, err := initEditor(os.Args)
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
 
-	ws := bufio.NewScanner(os.Stdin)
-
-	channels := Channels{
-		shouldSpellcheck: true,
-		spelling:         make(chan []string, 1),
-		spellres:         make(chan []string, 1),
-		done:             make(chan string, 1),
-	}
-
-	go execSpellchecker(channels)
+	go spellcheck.ExecSpellchecker(state.channels)
 
 	for {
-		getWords(channels, ws, of)
-		fmt.Print("? ")
-		ws.Scan()
-		in := ws.Text()
-		if in == "q" {
-			close(channels.done)
+		err := getWords(&state)
+		if err != nil {
+			fmt.Println(err)
 			break
 		}
-		runCommand(&channels, in, ws, of)
+		fmt.Print("? ")
+		state.wordInput.Scan()
+		state.command = state.wordInput.Text()
+		if state.command == QUIT_EDITOR {
+			close(state.channels.Done)
+			break
+		}
+		runCommand(&state)
 	}
 }
