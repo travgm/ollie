@@ -68,14 +68,15 @@ func runCommand(state *State) {
 		}
 	case DEL_LAST_LINE:
 		line := strconv.Itoa(len(state.ollie.Lines))
-		err := state.ollie.UpdateLine(line, "")
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			state.ollie.Lines = state.ollie.Lines[:len(state.ollie.Lines)-1]
-			state.ollie.LineCount -= 1
-			fmt.Println("cleared line", line)
+		if state.ollie.FileHandle != nil {
+			err := state.ollie.UpdateLine(line, "")
+			if err != nil {
+				fmt.Println(err)
+			}
 		}
+		state.ollie.Lines = state.ollie.Lines[:len(state.ollie.Lines)-1]
+		state.ollie.LineCount -= 1
+		fmt.Println("cleared line", line)
 	case FIX_LINE:
 		state.wordInput.Scan()
 		err := state.ollie.UpdateLine(param, state.wordInput.Text())
