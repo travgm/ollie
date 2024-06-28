@@ -12,7 +12,6 @@ import (
 	"git.sr.ht/~travgm/ollie/tree/develop/spellcheck"
 )
 
-// Holds editor state to be passed around
 type State struct {
 	channels  spellcheck.Channels
 	command   string
@@ -40,7 +39,9 @@ func runCommand(state *State) {
 		fmt.Errorf("Invalid command/parameters\n")
 	}
 
+	// Holds the main command to be executed
 	cmd := c[0]
+
 	param := ""
 	if cmdLen > 1 {
 		param = c[1]
@@ -48,6 +49,7 @@ func runCommand(state *State) {
 
 	switch cmd {
 	case APPEND:
+		// We just break here because how the main loop is designed it drops us back to the getWords() function
 		break
 	case WRITE_FILE:
 		if param != "" {
@@ -56,12 +58,20 @@ func runCommand(state *State) {
 			if err != nil {
 				fmt.Println(err)
 			}
+
+			// If the user doesn't specify a file to write to we write it to the junk file
+		} else {
+			err := state.ollie.CreateFile()
+			if err != nil {
+				fmt.Println(err)
+			}
 		}
 
 		bytes, err := state.ollie.WriteFile()
-		fmt.Printf("Wrote %d bytes to %s\n", bytes, state.ollie.Name)
 		if err != nil {
 			fmt.Println(err)
+		} else {
+			fmt.Printf("Wrote %d bytes to %s\n", bytes, state.ollie.Name)
 		}
 	case FILE_INFO:
 		fmt.Println(state.ollie)
