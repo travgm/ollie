@@ -1,9 +1,11 @@
 package olliefile
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -22,6 +24,8 @@ func (o *File) String() string {
 		o.Name, o.LineCount, o.WordCount, o.LastSaved.Format("2006-01-02 15:04:05"))
 }
 
+// TODO: If the file already existed and we write a file after adding some lines it just appends the
+// whole file again to the file. We need to only append the new lines
 func (o *File) WriteFile() (int, error) {
 	if o.FileHandle == nil {
 		return 0, fmt.Errorf("Error: File handle null")
@@ -70,10 +74,38 @@ func (o *File) CreateFile() error {
 		return fmt.Errorf("ERROR: No file name speified")
 	}
 
+	doesExist, err := os.OpenFile(o.Name, os.O_RDONLY, 0)
+	if err == nil {
+		o.FileHandle = doesExist
+		err := o.readFile()
+		if err != nil {
+			return fmt.Errorf("read file", err)
+		}
+	}
+
 	f, err := os.OpenFile(o.Name, os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {
 		return err
 	}
 	o.FileHandle = f
+	return nil
+}
+
+func (o *File) readFile() error {
+	defer o.FileHandle.Close()
+
+	scanner := bufio.NewScanner(o.FileHandle)
+	for scanner.Scan() {
+		o.Lines = append(o.Lines, scanner.Text())
+		o.LineCount += 1
+		o.WordCount += len(strings.Split(" ", scanner.Text()))
+	}
+
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+	o.Saved = true
+	o.LastSaved = time.Now()
+
 	return nil
 }

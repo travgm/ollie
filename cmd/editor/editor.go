@@ -229,7 +229,6 @@ func run() error {
 
 	state, err := initEditor(flag.Arg(0), *spellFlag)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 
