@@ -24,12 +24,21 @@ func (o *File) String() string {
 		o.Name, o.LineCount, o.WordCount, o.LastSaved.Format("2006-01-02 15:04:05"))
 }
 
-// TODO: If the file already existed and we write a file after adding some lines it just appends the
-// whole file again to the file. We need to only append the new lines
 func (o *File) WriteFile() (int, error) {
 	if o.FileHandle == nil {
 		return 0, fmt.Errorf("Error: File handle null")
 	}
+
+	err := o.FileHandle.Truncate(0)
+	if err != nil {
+		return 0, err
+	}
+
+	_, err = o.FileHandle.Seek(0, 0)
+	if err != nil {
+		return 0, err
+	}
+
 	bytes := 0
 	for _, s := range o.Lines {
 		bw, err := fmt.Fprintln(o.FileHandle, s)
@@ -38,6 +47,7 @@ func (o *File) WriteFile() (int, error) {
 			return bytes, err
 		}
 	}
+	o.FileHandle.Sync()
 	o.Saved = true
 	o.LastSaved = time.Now()
 	return bytes, nil

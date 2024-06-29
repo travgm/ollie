@@ -104,9 +104,7 @@ func runCommand(state *State) {
 			if err != nil {
 				fmt.Println(err)
 			}
-
-			// If the user doesn't specify a file to write to we write it to the junk file
-		} else {
+		} else if state.ollie.FileHandle == nil && state.ollie.Name != "" {
 			err := state.ollie.CreateFile()
 			if err != nil {
 				fmt.Println(err)
