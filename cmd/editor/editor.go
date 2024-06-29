@@ -16,6 +16,11 @@ import (
 	"git.sr.ht/~travgm/ollie/version"
 )
 
+// Editor state, this should hold everything we need to be passed around
+// and modify state. The only channels we use are a send and receive one
+// for spellchecking and a done channel to signify the program is exiting
+//
+// command should only be one of the valid editor const commands
 type State struct {
 	channels  spellcheck.Channels
 	command   string
@@ -37,6 +42,7 @@ const (
 	COMMAND_MODE  = "."
 )
 
+// Checks state.command and runs the proper routines for it
 func runCommand(state *State) {
 	c := strings.Split(state.command, " ")
 
@@ -123,6 +129,37 @@ func runCommand(state *State) {
 	}
 }
 
+// Spellchecking a single word
+//
+// This sends the current text in the state bufio scanner to the spelling
+// channel. It receives back single or multiple suggestions for each word
+// in the string sent
+func getSpellcheckSuggestions(state *State) error {
+	state.channels.Spelling <- strings.Fields(state.wordInput.Text())
+	fmt.Println("spellchecking...")
+	val, ok := <-state.channels.Spellres
+	if !ok {
+		return fmt.Errorf("spellcheck channel closed")
+	}
+	count := 1
+	if len(val) > 0 && ok {
+		fmt.Printf("corrections:")
+		for _, suggest := range val {
+			if suggest != "" {
+				fmt.Printf(" %d:%s", count, suggest)
+				count += 1
+			}
+		}
+		if count == 1 {
+			fmt.Printf(" no suggestions\n")
+		} else {
+			fmt.Println("")
+		}
+	}
+
+	return nil
+}
+
 func getWords(state *State) error {
 	if state == nil {
 		return fmt.Errorf("GetWords Error. State is null\n")
@@ -134,26 +171,12 @@ func getWords(state *State) error {
 		}
 
 		if state.channels.ShouldSpellcheck && len(state.wordInput.Text()) >= 3 {
-			state.channels.Spelling <- strings.Fields(state.wordInput.Text())
-			fmt.Println("spellchecking...")
-			val, ok := <-state.channels.Spellres
-
-			count := 1
-			if len(val) > 0 && ok {
-				fmt.Printf("corrections:")
-				for _, suggest := range val {
-					if suggest != "" {
-						fmt.Printf(" %d:%s", count, suggest)
-						count += 1
-					}
-				}
-				if count == 1 {
-					fmt.Printf(" no suggestions\n")
-				} else {
-					fmt.Println("")
-				}
+			err := getSpellcheckSuggestions(state)
+			if err != nil {
+				fmt.Println(err)
 			}
 		}
+
 		state.ollie.Lines = append(state.ollie.Lines, state.wordInput.Text())
 		state.ollie.LineCount += 1
 		state.ollie.WordCount += len(strings.Split(" ", state.wordInput.Text()))
