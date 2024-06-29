@@ -82,7 +82,7 @@ func parserTime() string {
 func init() {
 	f, err := os.OpenFile(logFilename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		log.Fatalf("error opening file: %v", err)
+		fmt.Println(err)
 	}
 	log.SetOutput(f)
 	log.SetPrefix("confparser: ")
@@ -107,7 +107,7 @@ func ParseConfig() (*Settings, error) {
 	conf, err := os.Open(configPath)
 	if err != nil {
 		log.Println("unable to find config", defaultConfFile)
-		return nil, fmt.Errorf("no config file found")
+		return nil, err
 	}
 	defer conf.Close()
 

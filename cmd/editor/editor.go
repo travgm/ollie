@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -168,8 +169,8 @@ func initEditor(filename string, spell bool) (State, error) {
 		of.CreateFile()
 	}
 	config, err := conf.ParseConfig()
-	if err != nil {
-		return State{}, err
+	if !errors.Is(err, os.ErrNotExist) {
+		return State{}, nil
 	}
 
 	spChannels := spellcheck.Channels{
