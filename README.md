@@ -50,13 +50,13 @@ This will execute a shell command
 - d
 This will remove the last line from the editor and if a file is associated with the current editing it will remove it from disk
 
-- .
+- `.`
 Enter command mode
 
 - q
 Quit the editor (It does NOT ask to save the file)
 
-contributing
+Contributing
 ==========
 
 This project was really just written for my own edification and learning, but was inspired by the simple ed text editor for unix. With that that being said all features, suggestions and patches are welcome on the ollie editor mailing list [here](https://lists.sr.ht/~travgm/ollie-editor) for more information see CONTRIBUTING.md

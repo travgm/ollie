@@ -11,6 +11,9 @@ Anyone is welcome to send in a bug report, feature request or patches! We use th
 mailing list to discuss all work regarding Ollie so that everything is open and searchable
 by the community.
 
+Active development is being worked on the develop branch of the project. Please keep that in mind
+when debugging current development, patches, etc..
+
 If you submit a patch that is applied, feel free to add yourself to the CONTRIBUTORS file if you
 would like to be credited for your work on this project.
 
