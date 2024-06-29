@@ -1,11 +1,21 @@
+// Package conf provides a basic application configuration file format.
+// The configuration language consists of key-value pairs, one per line,
+// separated by the "=" character.
+// Lines beginning with "#" are comments and are ignored.
+//
+// For example:
+//
+//	logfile = somepath.txt
+//	# override default of 420
+//	maxcount = 69
 package conf
 
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 	"unicode"
@@ -89,40 +99,29 @@ func init() {
 	log.Printf("Logging started at %s\n", parserTime())
 }
 
-func NewTokenizer(i *os.File) *Tokenizer {
-	return &Tokenizer{lines: bufio.NewScanner(i)}
+func NewTokenizer(r io.Reader) *Tokenizer {
+	return &Tokenizer{lines: bufio.NewScanner(r)}
 }
 
 func NewParser(t *Tokenizer) *Parser {
 	return &Parser{tokenizer: t, tokens: []Token{}}
 }
 
-func ParseConfig() (*Settings, error) {
-	homeDir, err := os.UserHomeDir()
+// FromFile returns parsed settings from the named file.
+func FromFile(name string) (*Settings, error) {
+	f, err := os.Open(name)
 	if err != nil {
-		log.Println("error getting users home directory")
-	}
-
-	configPath := filepath.Join(homeDir, defaultConfFile)
-	conf, err := os.Open(configPath)
-	if err != nil {
-		log.Println("unable to find config", defaultConfFile)
 		return nil, err
 	}
-	defer conf.Close()
+	defer f.Close()
+	return ParseConfig(f)
+}
 
-	// Need to add error checking
-	tokenizer := NewTokenizer(conf)
+// ParseConfig parses settings from rd.
+func ParseConfig(rd io.Reader) (*Settings, error) {
+	tokenizer := NewTokenizer(rd)
 	parser := NewParser(tokenizer)
-
-	log.Println("started parsing config")
-	parsedConfig, err := parser.Parse()
-	if err != nil {
-		log.Println("error encountered parsing config:", err)
-		return nil, err
-	}
-
-	return parsedConfig, nil
+	return parser.Parse()
 }
 
 // We iterate the config file lines either returning error tokens or
