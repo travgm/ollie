@@ -168,7 +168,7 @@ func initEditor(filename string, spell bool) (State, error) {
 		of.Name = filename
 		of.CreateFile()
 	}
-	config, err := conf.ParseConfig()
+	config, err := conf.FromFile(conf.DefaultConfFile)
 	if !errors.Is(err, os.ErrNotExist) {
 		return State{}, nil
 	}
