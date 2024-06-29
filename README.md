@@ -24,3 +24,8 @@ you can type ```w test.txt``` and it will save to that file instead.
 After every command it will drop you back to the editor to type text. If you see the line preceded with ```?``` that means you are in command mode. You can type ```a``` to go back to appending text.
 
 To exit simply type ```q``` at the command prompt.
+
+contributing
+==========
+
+This project was really just written for my own edification and learning, but was inspired by the simple ed text editor for unix. With that that being said all features, suggestions and patches are welcome on the ollie editor mailing list [here](https://lists.sr.ht/~travgm/ollie-editor)
