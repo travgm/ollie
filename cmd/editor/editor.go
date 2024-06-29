@@ -9,10 +9,10 @@ import (
 	"strconv"
 	"strings"
 
-	"git.sr.ht/~travgm/ollie/tree/develop/conf"
-	"git.sr.ht/~travgm/ollie/tree/develop/olliefile"
-	"git.sr.ht/~travgm/ollie/tree/develop/spellcheck"
-	"git.sr.ht/~travgm/ollie/tree/develop/version"
+	"git.sr.ht/~travgm/ollie/conf"
+	"git.sr.ht/~travgm/ollie/olliefile"
+	"git.sr.ht/~travgm/ollie/spellcheck"
+	"git.sr.ht/~travgm/ollie/version"
 )
 
 type State struct {
