@@ -3,6 +3,7 @@ package spellcheck
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"math"
 	"os"
 	"slices"
@@ -14,7 +15,6 @@ import (
 // behavioral settings such as MaxSuggest which limits the amount of suggestions
 // we can receive back from CheckWord
 type Dict struct {
-	WordFile   string
 	dictionary []string
 	MaxSuggest int
 	mutex      sync.Mutex
@@ -27,14 +27,17 @@ type Channels struct {
 	Done             chan string
 }
 
-func (d *Dict) LoadWordlist() error {
-	w, err := os.Open(d.WordFile)
+func (d *Dict) LoadFromFile(name string) error {
+	f, err := os.Open(name)
 	if err != nil {
 		return err
 	}
-	defer w.Close()
+	defer f.Close()
+	return d.LoadWordlist(f)
+}
 
-	ws := bufio.NewScanner(w)
+func (d *Dict) LoadWordlist(r io.Reader) error {
+	ws := bufio.NewScanner(r)
 	for ws.Scan() {
 		d.dictionary = append(d.dictionary, ws.Text())
 	}
@@ -65,7 +68,7 @@ func (d *Dict) CheckWord(word string) ([]string, error) {
 			if slices.Contains(wordChoices, w) {
 				continue
 			}
-			dist := levDistance(word, w)
+			dist := LevDistance(word, w)
 			if dist < bestDistance {
 				bestDistance = dist
 				bestWord = w
@@ -85,7 +88,7 @@ func (d *Dict) CheckWord(word string) ([]string, error) {
 
 // A mediocre Levenshtein Distance algorithm
 // https://en.wikipedia.org/wiki/Levenshtein_distance
-func levDistance(word string, dictWord string) float64 {
+func LevDistance(word string, dictWord string) float64 {
 	// lm[i][j] holds the distance between [i] chars of word and [j] chars of dictWord
 	lm := make([][]float64, len(word)+1)
 	for i := range lm {
@@ -125,8 +128,8 @@ func levDistance(word string, dictWord string) float64 {
 // Go routine to handle spellchecking
 // Dictionary is hardcoded for now until we get config working
 func ExecSpellchecker(channel Channels) {
-	dict := Dict{WordFile: "/usr/share/dict/words", MaxSuggest: 3}
-	err := dict.LoadWordlist()
+	dict := Dict{MaxSuggest: 3}
+	err := dict.LoadFromFile("/usr/share/dict/words")
 	if err != nil {
 		fmt.Println(err)
 	}

@@ -20,7 +20,7 @@ type File struct {
 }
 
 func (o *File) String() string {
-	return fmt.Sprintf("File: %s\nLine Count: %d\nWord Count: %d\nLast Saved: %s\n",
+	return fmt.Sprintf("File: %s\nLine Count: %d\nWord Count: %d\nLast Saved: %s",
 		o.Name, o.LineCount, o.WordCount, o.LastSaved.Format("2006-01-02 15:04:05"))
 }
 
