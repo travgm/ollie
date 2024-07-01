@@ -14,6 +14,8 @@ import (
 // Dict holds information regarding the dictionary we have loaded and some
 // behavioral settings such as MaxSuggest which limits the amount of suggestions
 // we can receive back from CheckWord
+//
+// MaxSuggest is the maximum suggestions to return for each word spelled wrong
 type Dict struct {
 	dictionary []string
 	MaxSuggest int
@@ -22,6 +24,7 @@ type Dict struct {
 
 type Channels struct {
 	ShouldSpellcheck bool
+	CheckMin         int // CheckMin is the minimum amount of characters a line can have before it spell checks
 	Spelling         chan []string
 	Spellres         chan []string
 	Done             chan string

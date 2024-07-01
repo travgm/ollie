@@ -188,7 +188,7 @@ func getWords(state *State) error {
 			break
 		}
 
-		if state.channels.ShouldSpellcheck && len(state.wordInput.Text()) >= 3 {
+		if state.channels.ShouldSpellcheck && len(state.wordInput.Text()) >= state.channels.CheckMin {
 			err := getSpellcheckSuggestions(state)
 			if err != nil {
 				fmt.Println(err)
@@ -216,6 +216,7 @@ func initEditor(filename string, spell bool) (State, error) {
 
 	spChannels := spellcheck.Channels{
 		ShouldSpellcheck: spell,
+		CheckMin:         3,
 		Spelling:         make(chan []string, 1),
 		Spellres:         make(chan []string, 1),
 		Done:             make(chan string, 1),
