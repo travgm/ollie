@@ -12,6 +12,7 @@ import (
 
 	"git.sr.ht/~travgm/ollie/conf"
 	"git.sr.ht/~travgm/ollie/olliefile"
+	"git.sr.ht/~travgm/ollie/search"
 	"git.sr.ht/~travgm/ollie/spellcheck"
 	"git.sr.ht/~travgm/ollie/version"
 )
@@ -39,6 +40,7 @@ const (
 	EXEC_CMD      = "e"
 	QUIT_EDITOR   = "q"
 	DEL_LAST_LINE = "d"
+	SEARCH_TEXT   = "s"
 	COMMAND_MODE  = "."
 )
 
@@ -91,6 +93,22 @@ func runCommand(state *State) {
 			fmt.Println(err)
 		} else {
 			fmt.Println("updated line", param)
+		}
+	case SEARCH_TEXT:
+		if len(c) <= 1 || param == "" {
+			fmt.Println("'s' needs a text string to search the buffer for")
+			break
+		}
+		found := false
+		sf := search.MakeStringFinder(param)
+		for i, line := range state.ollie.Lines {
+			if sf.Next(line) != -1 {
+				fmt.Printf("%d:%s\n", i+1, line)
+				found = true
+			}
+		}
+		if found == false {
+			fmt.Printf("%s not found in buffer\n", param)
 		}
 	case EXEC_CMD:
 		if len(c) <= 1 {
