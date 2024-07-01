@@ -6,13 +6,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/exec"
-	"strconv"
-	"strings"
 
 	"git.sr.ht/~travgm/ollie/conf"
 	"git.sr.ht/~travgm/ollie/olliefile"
-	"git.sr.ht/~travgm/ollie/search"
 	"git.sr.ht/~travgm/ollie/spellcheck"
 	"git.sr.ht/~travgm/ollie/version"
 )
@@ -45,20 +41,12 @@ const (
 )
 
 // Checks state.command and runs the proper routines for it
-func runCommand(state *State) {
-	c := strings.Split(state.command, " ")
+func execIoCommand(state *State) {
 
-	cmdLen := len(c)
-	if cmdLen > 2 {
+	cmd, param, err := parseCommandArgs(state)
+	if err != nil {
 		fmt.Errorf("Invalid command/parameters\n")
-	}
-
-	// Holds the main command to be executed
-	cmd := c[0]
-
-	param := ""
-	if cmdLen > 1 {
-		param = c[1]
+		return
 	}
 
 	switch cmd {
@@ -76,16 +64,12 @@ func runCommand(state *State) {
 			fmt.Println("valid parameter for spellcheck is 'on' or 'off'")
 		}
 	case DEL_LAST_LINE:
-		line := strconv.Itoa(len(state.ollie.Lines))
-		if state.ollie.FileHandle != nil {
-			err := state.ollie.UpdateLine(line, "")
-			if err != nil {
-				fmt.Println(err)
-			}
+		line, err := deleteLastLine(state)
+		if err != nil {
+			fmt.Println("error deleting last line", err)
+		} else {
+			fmt.Println("cleared line", line)
 		}
-		state.ollie.Lines = state.ollie.Lines[:len(state.ollie.Lines)-1]
-		state.ollie.LineCount -= 1
-		fmt.Println("cleared line", line)
 	case FIX_LINE:
 		state.wordInput.Scan()
 		err := state.ollie.UpdateLine(param, state.wordInput.Text())
@@ -95,112 +79,27 @@ func runCommand(state *State) {
 			fmt.Println("updated line", param)
 		}
 	case SEARCH_TEXT:
-		if len(c) <= 1 || param == "" {
+		_, err := searchLinesBuffer(state, param)
+		if err != nil {
 			fmt.Println("'s' needs a text string to search the buffer for")
-			break
-		}
-		found := false
-		sf := search.MakeStringFinder(param)
-		for i, line := range state.ollie.Lines {
-			if sf.Next(line) != -1 {
-				fmt.Printf("%d:%s\n", i+1, line)
-				found = true
-			}
-		}
-		if found == false {
-			fmt.Printf("%s not found in buffer\n", param)
 		}
 	case EXEC_CMD:
-		if len(c) <= 1 {
-			fmt.Println("'e' needs a parameter to run in the shell")
-			break
-		}
-		scmd := exec.Command(c[1], c[2:]...)
-		res, err := scmd.CombinedOutput()
+		res, err := shellCommand(param)
 		if err != nil {
-			fmt.Println("exec failed:", err)
+			fmt.Println("'e' error", err)
 		} else {
 			fmt.Println(string(res))
 		}
 	case WRITE_FILE:
-		if param != "" {
-			state.ollie.Name = param
-			err := state.ollie.CreateFile()
-			if err != nil {
-				fmt.Println(err)
-			}
-		} else if state.ollie.FileHandle == nil && state.ollie.Name != "" {
-			err := state.ollie.CreateFile()
-			if err != nil {
-				fmt.Println(err)
-			}
-		}
-
-		bytes, err := state.ollie.WriteFile()
+		err := writeToDisk(state, param)
 		if err != nil {
 			fmt.Println(err)
-		} else {
-			fmt.Printf("Wrote %d bytes to %s\n", bytes, state.ollie.Name)
 		}
 	default:
 		fmt.Println("unknown command")
 	}
-}
 
-// Spellchecking a single word
-//
-// This sends the current text in the state bufio scanner to the spelling
-// channel. It receives back single or multiple suggestions for each word
-// in the string sent
-func getSpellcheckSuggestions(state *State) error {
-	state.channels.Spelling <- strings.Fields(state.wordInput.Text())
-	fmt.Println("spellchecking...")
-	val, ok := <-state.channels.Spellres
-	if !ok {
-		return fmt.Errorf("spellcheck channel closed")
-	}
-	count := 1
-	if len(val) > 0 && ok {
-		fmt.Printf("corrections:")
-		for _, suggest := range val {
-			if suggest != "" {
-				fmt.Printf(" %d:%s", count, suggest)
-				count += 1
-			}
-		}
-		if count == 1 {
-			fmt.Printf(" no suggestions\n")
-		} else {
-			fmt.Println("")
-		}
-	}
-
-	return nil
-}
-
-func getWords(state *State) error {
-	if state == nil {
-		return fmt.Errorf("GetWords Error. State is null\n")
-	}
-
-	for state.wordInput.Scan() {
-		if state.wordInput.Text() == COMMAND_MODE {
-			break
-		}
-
-		if state.channels.ShouldSpellcheck && len(state.wordInput.Text()) >= state.channels.CheckMin {
-			err := getSpellcheckSuggestions(state)
-			if err != nil {
-				fmt.Println(err)
-			}
-		}
-
-		state.ollie.Lines = append(state.ollie.Lines, state.wordInput.Text())
-		state.ollie.LineCount += 1
-		state.ollie.WordCount += len(strings.Split(" ", state.wordInput.Text()))
-		fmt.Printf("%d:%d\n", state.ollie.LineCount, len(state.wordInput.Text()))
-	}
-	return nil
+	return
 }
 
 func initEditor(filename string, spell bool) (State, error) {
@@ -289,7 +188,7 @@ func run() error {
 			close(state.channels.Done)
 			break
 		}
-		runCommand(&state)
+		execIoCommand(&state)
 	}
 
 	return nil
