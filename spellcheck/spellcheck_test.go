@@ -1,18 +1,14 @@
-package spellcheck_test
+package spellcheck
 
-import (
-	"testing"
-
-	"git.sr.ht/~travgm/ollie/spellcheck"
-)
+import "testing"
 
 func TestLevDistance(t *testing.T) {
-	userWord := "hello"
-	dictWord := "cello"
+	user := "hello"
+	dict := "cello"
 
-	dist := spellcheck.LevDistance(userWord, dictWord)
-	if dist != 1 {
-		t.Fatal("Wrong distance for hello and cello")
+	dist := LevDistance(user, dict)
+	var want float64 = 1
+	if dist != want {
+		t.Fatalf("LevDistance(%q, %q) = %f, want %f", user, dict, dist, want)
 	}
-
 }
