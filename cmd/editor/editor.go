@@ -27,6 +27,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"git.sr.ht/~travgm/ollie/conf"
 	"git.sr.ht/~travgm/ollie/olliefile"
@@ -76,9 +77,21 @@ func execIoCommand(state *State) {
 	case FILE_INFO:
 		fmt.Println(state.ollie)
 	case SPELLCHECK:
+		// Move this to io.go
+		params := strings.Split(param, " ")
+		var spellFile string
+
+		if len(params) == 2 {
+			spellFile = params[1]
+		}
+
 		switch param {
 		case "on":
-			state.channels.ShouldSpellcheck = true
+			if !state.channels.SpellRunning {
+				go spellcheck.ExecSpellchecker(&state.channels, spellFile)
+			} else if state.channels.SpellRunning && !state.channels.ShouldSpellcheck {
+				state.channels.ShouldSpellcheck = true
+			}
 		case "off":
 			state.channels.ShouldSpellcheck = false
 		default:
@@ -123,7 +136,7 @@ func execIoCommand(state *State) {
 	return
 }
 
-func initEditor(filename string, spell bool) (State, error) {
+func initEditor(filename string, spell string) (State, error) {
 	of := &olliefile.File{Name: "junk.ollie"}
 	if filename != "" {
 		of.Name = filename
@@ -134,8 +147,10 @@ func initEditor(filename string, spell bool) (State, error) {
 		return State{}, nil
 	}
 
+	shouldSpell := len(spell) > 0
+
 	spChannels := spellcheck.Channels{
-		ShouldSpellcheck: spell,
+		ShouldSpellcheck: shouldSpell,
 		CheckMin:         3,
 		Spelling:         make(chan []string, 1),
 		Spellres:         make(chan []string, 1),
@@ -174,7 +189,7 @@ func main() {
 
 func run() error {
 	aboutFlag := flag.Bool("version", false, "Display version information")
-	spellFlag := flag.Bool("spcheck", false, "Turn spellchecking on, default is off")
+	spellFlag := flag.String("spcheck", "", "Turn spellchecking on with provided dictionary, default is off")
 
 	flag.Parse()
 	if *aboutFlag {
@@ -192,8 +207,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
-
-	go spellcheck.ExecSpellchecker(state.channels)
+	
+	if state.channels.ShouldSpellcheck {
+		go spellcheck.ExecSpellchecker(&state.channels, *spellFlag)
+	}
 
 	for {
 		err := getWords(&state)
@@ -201,7 +218,7 @@ func run() error {
 			fmt.Println(err)
 			close(state.channels.Done)
 			return err
-		}
+			}
 		fmt.Print("@ ")
 		state.wordInput.Scan()
 		state.command = state.wordInput.Text()

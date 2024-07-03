@@ -23,13 +23,14 @@ package spellcheck
 
 import (
 	"bufio"
-	"fmt"
 	"io"
+	"fmt"
 	"math"
 	"os"
 	"slices"
 	"strings"
 	"sync"
+	"errors"
 )
 
 // Dict holds information regarding the dictionary we have loaded and some
@@ -44,7 +45,8 @@ type Dict struct {
 }
 
 type Channels struct {
-	ShouldSpellcheck bool
+	ShouldSpellcheck bool // This can be turned on and off to disable spellchecking
+	SpellRunning     bool // This is only set when the go routine is running
 	CheckMin         int // CheckMin is the minimum amount of characters a line can have before it spell checks
 	Spelling         chan []string
 	Spellres         chan []string
@@ -151,12 +153,26 @@ func LevDistance(word string, dictWord string) float64 {
 
 // Go routine to handle spellchecking
 // Dictionary is hardcoded for now until we get config working
-func ExecSpellchecker(channel Channels) {
+func ExecSpellchecker(channel *Channels, filePath string) {
 	dict := Dict{MaxSuggest: 3}
-	err := dict.LoadFromFile("/usr/share/dict/words")
-	if err != nil {
-		fmt.Println(err)
+	err := dict.LoadFromFile(filePath)
+	if errors.Is(err, os.ErrNotExist) {
+		// If the user supplied dictionary is not found then we try the default
+		// location found on most *nix os's
+		//
+		// We dont worry about it if this cant load because then the spellchecker
+		// just returns that there is no suggestion for the word
+		fmt.Printf("dictionary file %s not found trying default\n", filePath)
+		err := dict.LoadFromFile("/usr/share/dict/words")	
+		if errors.Is(err, os.ErrNotExist) {
+			fmt.Printf("default dictionary not found. Please specify a dictionary to use spellchecking\n")
+			channel.ShouldSpellcheck = false
+			channel.SpellRunning = false
+			return
+		}
 	}
+
+	channel.SpellRunning = true
 
 	for {
 		select {
