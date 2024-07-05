@@ -19,6 +19,10 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+//
+// Spellchecking routines for the spellchecker called from editor.go. This is a
+// very mediocre implementation of the levenshtein distance algorithm converted
+// from psuedo code.
 package spellcheck
 
 import (
