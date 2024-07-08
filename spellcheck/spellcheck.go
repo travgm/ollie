@@ -19,7 +19,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-//
+
 // Spellchecking routines for the spellchecker called from editor.go. This is a
 // very mediocre implementation of the levenshtein distance algorithm converted
 // from psuedo code.
@@ -28,12 +28,10 @@ package spellcheck
 import (
 	"bufio"
 	"io"
-	"fmt"
 	"math"
 	"os"
 	"slices"
 	"strings"
-	"sync"
 	"errors"
 )
 
@@ -45,16 +43,15 @@ import (
 type Dict struct {
 	dictionary []string
 	MaxSuggest int
-	mutex      sync.Mutex
 }
 
-type Channels struct {
-	ShouldSpellcheck bool // This can be turned on and off to disable spellchecking
-	SpellRunning     bool // This is only set when the go routine is running
-	CheckMin         int // CheckMin is the minimum amount of characters a line can have before it spell checks
-	Spelling         chan []string
-	Spellres         chan []string
-	Done             chan string
+func NewSpellchecker(dictionaryPath string, suggestions int) (*Dict, error) {
+	d := &Dict{MaxSuggest: suggestions}
+	err := d.LoadFromFile(dictionaryPath)
+	if !errors.Is(err, os.ErrNotExist) {
+		return nil, err
+	}
+	return d, nil
 }
 
 func (d *Dict) LoadFromFile(name string) error {
@@ -80,8 +77,6 @@ func (d *Dict) LoadWordlist(r io.Reader) error {
 }
 
 func (d *Dict) CheckWord(word string) ([]string, error) {
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
 	wordChoices := make([]string, 1)
 
 	if word == "" || word == " " || slices.Contains(d.dictionary, word) {
@@ -105,7 +100,7 @@ func (d *Dict) CheckWord(word string) ([]string, error) {
 			}
 		}
 
-		if slices.Contains(wordChoices, bestWord) == false {
+		if slices.Contains(wordChoices, bestWord) == false && bestWord != "" {
 			wordChoices = append(wordChoices, strings.TrimSpace(bestWord))
 
 		}
@@ -155,47 +150,3 @@ func LevDistance(word string, dictWord string) float64 {
 	return lm[len(word)][len(dictWord)]
 }
 
-// Go routine to handle spellchecking
-// Dictionary is hardcoded for now until we get config working
-func ExecSpellchecker(channel *Channels, filePath string) {
-	dict := Dict{MaxSuggest: 3}
-	err := dict.LoadFromFile(filePath)
-	if errors.Is(err, os.ErrNotExist) {
-		// If the user supplied dictionary is not found then we try the default
-		// location found on most *nix os's
-		//
-		// We dont worry about it if this cant load because then the spellchecker
-		// just returns that there is no suggestion for the word
-		fmt.Printf("dictionary file %s not found trying default\n", filePath)
-		err := dict.LoadFromFile("/usr/share/dict/words")	
-		if errors.Is(err, os.ErrNotExist) {
-			fmt.Printf("default dictionary not found. Please specify a dictionary to use spellchecking\n")
-			channel.ShouldSpellcheck = false
-			channel.SpellRunning = false
-			return
-		}
-	}
-
-	channel.SpellRunning = true
-
-	for {
-		select {
-		// We received a message to the spellchecker. We spell check the slice
-		// and send back a slice that has suggestions.
-		case words, ok := <-channel.Spelling:
-			if ok {
-				suggestion := make([]string, 1)
-				for _, word := range words {
-					vals, err := dict.CheckWord(word)
-					if err != nil || len(vals) < 1 {
-						continue
-					}
-					suggestion = append(suggestion, vals...)
-				}
-				channel.Spellres <- suggestion
-			}
-		case <-channel.Done:
-			return
-		}
-	}
-}
