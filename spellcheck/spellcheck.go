@@ -77,7 +77,7 @@ func (d *Dict) LoadWordlist(r io.Reader) error {
 }
 
 func (d *Dict) CheckWord(word string) ([]string, error) {
-	wordChoices := make([]string, 1)
+	var wordChoices []string
 
 	if word == "" || word == " " || slices.Contains(d.dictionary, word) {
 		return nil, nil
@@ -100,7 +100,7 @@ func (d *Dict) CheckWord(word string) ([]string, error) {
 			}
 		}
 
-		if slices.Contains(wordChoices, bestWord) == false && bestWord != "" {
+		if slices.Contains(wordChoices, bestWord) == false {
 			wordChoices = append(wordChoices, strings.TrimSpace(bestWord))
 
 		}
