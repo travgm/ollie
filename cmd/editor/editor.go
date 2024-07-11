@@ -44,7 +44,7 @@ import (
 //
 // command should only be one of the valid editor const commands
 type State struct {
-	channels  spellcheck.Channels
+	channels  Channels
 	command   string
 	wordInput *bufio.Scanner
 	ollie     *olliefile.File
@@ -91,7 +91,7 @@ func execIoCommand(state *State) {
 		switch param {
 		case "on":
 			if !state.channels.SpellRunning {
-				go spellcheck.ExecSpellchecker(&state.channels, spellFile)
+				go execSpellchecker(&state.channels)
 			} else if state.channels.SpellRunning && !state.channels.ShouldSpellcheck {
 				state.channels.ShouldSpellcheck = true
 			}
@@ -152,7 +152,7 @@ func initEditor(filename string, spell string) (State, error) {
 
 	shouldSpell := len(spell) > 0
 
-	spChannels := spellcheck.Channels{
+	spChannels := Channels{
 		ShouldSpellcheck: shouldSpell,
 		CheckMin:         3,
 		Spelling:         make(chan []string, 1),
@@ -212,7 +212,7 @@ func run() error {
 	}
 	
 	if state.channels.ShouldSpellcheck {
-		go spellcheck.ExecSpellchecker(&state.channels, *spellFlag)
+		go execSpellchecker(&state.channels, *spellFlag)
 	}
 
 	for {

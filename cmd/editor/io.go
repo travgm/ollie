@@ -28,7 +28,24 @@ import (
 	"strings"
 
 	"git.sr.ht/~travgm/ollie/search"
+	"git.sr.ht/~travgm/ollie/spellcheck"
 )
+
+type Channels struct {
+       // This can be turned on and off to disable spellchecking
+       ShouldSpellcheck bool
+
+       // This is only set when the go routine is running
+       SpellRunning     bool  
+       
+       // The minimum amount of characters a line must have before we send it to the spellchecker
+       CheckMin         int
+
+       // Spellcheck send/receive channels
+       Spelling         chan []string   
+       Spellres         chan []string
+       Done             chan []string
+}
 
 // Returns a main command and its parameters. 
 //
@@ -186,4 +203,47 @@ func getSpellcheckSuggestions(state *State) error {
 	return nil
 }
 
+// Go routine to handle spellchecking 
+// Dictionary is hardcoded for now until we get config working 
+func execSpellchecker(channel Channels) { 
+        dict := spellcheck.Dict{MaxSuggest: 3} 
+	err := dict.LoadFromFile(filePath) 
+	if errors.Is(err, os.ErrNotExist) { 
+		// If the user supplied dictionary is not found then we try the default 
+		// location found on most *nix os's 
+		// 
+		// We dont worry about it if this cant load because then the spellchecker 
+		// just returns that there is no suggestion for the word 
+		fmt.Printf("dictionary file %s not found trying default\n", filePath) 
+		err := dict.LoadFromFile("/usr/share/dict/words") 
+		if errors.Is(err, os.ErrNotExist) { 
+			fmt.Printf("default dictionary not found. Please specify a dictionary to use spellchecking\n") 
+			channel.ShouldSpellcheck = false 
+			channel.SpellRunning = false 
+			return 
+		} 
+	} 
 
+	channel.SpellRunning = true 
+
+	for { 
+		select { 
+			// We received a message to the spellchecker. We spell check the slice 
+			// and send back a slice that has suggestions. 
+			case words, ok := <-channel.Spelling: 
+			if ok { 
+				var suggestion []string 
+				for _, word := range words { 
+					vals, err := dict.CheckWord(word) 
+					if err != nil || len(vals) < 1 { 
+						continue 
+					} 
+					suggestion = append(suggestion, vals...) 
+				} 
+				channel.Spellres <- suggestion 
+			} 
+			case <-channel.Done: 
+			return 
+		} 
+	} 
+}
