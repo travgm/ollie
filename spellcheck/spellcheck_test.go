@@ -1,8 +1,8 @@
 package spellcheck
 
 import (
-	"testing"
 	"strings"
+	"testing"
 )
 
 func TestLevDistance(t *testing.T) {
@@ -17,24 +17,28 @@ func TestLevDistance(t *testing.T) {
 }
 
 func TestGetWords(t *testing.T) {
-	testDictionary := "jupiter\nneptune\nearth\nhello\nsomehing\nrandom"
-	d, err := NewSpellchecker("", 3)
+	entries := `jupiter
+neptune
+earth
+hello
+somehing
+random`
+
+	dict := &Dict{MaxSuggest: 3}
+	err := dict.load(strings.NewReader(entries))
 	if err != nil {
-		t.Fatalf("NewSpellchecker: %v", err)
-	}
-	r := strings.NewReader(testDictionary)
-	
-	err = d.LoadWordlist(r)
-	if err != nil {
-		t.Fatalf("LoadWordlist: %v", err)
+		t.Fatalf("load entries: %v", err)
 	}
 
-	var want string = "hello"
 	var user string = "cello"
-	words, err := d.CheckWord(user)
-	if len(words) != 3 && words[0] != want {
-		t.Fatalf("CheckWord(%s) = %s, want %s", user, words[0], want)
+	var want = [3]string{"hello", "earth", "random"}
+	suggestions, err := dict.Lookup(user)
+	if len(suggestions) != 3 {
+		t.Fatalf("want %d suggestions, got %v", 3, suggestions)
+	}
+	var got [3]string
+	copy(got[:], suggestions)
+	if want != got {
+		t.Errorf("CheckWord(%q) = %v, want %v", user, got, want)
 	}
 }
-
-

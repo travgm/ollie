@@ -20,9 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// Spellchecking routines for the spellchecker called from editor.go. This is a
-// very mediocre implementation of the levenshtein distance algorithm converted
-// from psuedo code.
+// Package spellcheck implements a dictionary providing suggestions for incorrectly spelled words.
 package spellcheck
 
 import (
@@ -32,51 +30,44 @@ import (
 	"os"
 	"slices"
 	"strings"
-	"errors"
 )
 
-// Dict holds information regarding the dictionary we have loaded and some
-// behavioral settings such as MaxSuggest which limits the amount of suggestions
-// we can receive back from CheckWord
-//
-// MaxSuggest is the maximum suggestions to return for each word spelled wrong
+// Dict represents a dictionary.
 type Dict struct {
-	dictionary []string
+	// MaxSuggest is the maximum number of suggestions to return
+	// for each word spelled incorrectly.
 	MaxSuggest int
+	dictionary []string
 }
 
-func NewSpellchecker(dictionaryPath string, suggestions int) (*Dict, error) {
-	d := &Dict{MaxSuggest: suggestions}
-	err := d.LoadFromFile(dictionaryPath)
-	if !errors.Is(err, os.ErrNotExist) {
-		return nil, err
-	}
-	return d, nil
+// NewDict returns a new Dict with entries read from the named file.
+// The format of the entries is a newline-delimited text file.
+// Each line contains a single correctly spelled word.
+func NewDict(name string) (*Dict, error) {
+	d := &Dict{}
+	return d, d.loadFromFile(name)
 }
 
-func (d *Dict) LoadFromFile(name string) error {
+func (d *Dict) loadFromFile(name string) error {
 	f, err := os.Open(name)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	return d.LoadWordlist(f)
+	return d.load(f)
 }
 
-func (d *Dict) LoadWordlist(r io.Reader) error {
-	ws := bufio.NewScanner(r)
-	for ws.Scan() {
-		d.dictionary = append(d.dictionary, ws.Text())
+func (d *Dict) load(r io.Reader) error {
+	sc := bufio.NewScanner(r)
+	for sc.Scan() {
+		d.dictionary = append(d.dictionary, sc.Text())
 	}
-
-	if err := ws.Err(); err != nil {
-		return err
-	}
-
-	return nil
+	return sc.Err()
 }
 
-func (d *Dict) CheckWord(word string) ([]string, error) {
+// Lookup returns a list of sugggested spellings (up to d.MaxSuggest) for the given word.
+// An empty slice is returned if word is present in the dictionary.
+func (d *Dict) Lookup(word string) ([]string, error) {
 	var wordChoices []string
 
 	if word == "" || word == " " || slices.Contains(d.dictionary, word) {
@@ -111,8 +102,10 @@ func (d *Dict) CheckWord(word string) ([]string, error) {
 
 }
 
-// A mediocre Levenshtein Distance algorithm
-// https://en.wikipedia.org/wiki/Levenshtein_distance
+// LevDistance returns an estimated "cost" to change word to dictWord.
+// It uses a mediocre implementation of the [Levenshtein distance] algorithm.
+//
+// [Levenshtein distance]: https://en.wikipedia.org/wiki/Levenshtein_distance
 func LevDistance(word string, dictWord string) float64 {
 	// lm[i][j] holds the distance between [i] chars of word and [j] chars of dictWord
 	lm := make([][]float64, len(word)+1)
@@ -149,4 +142,3 @@ func LevDistance(word string, dictWord string) float64 {
 	}
 	return lm[len(word)][len(dictWord)]
 }
-
