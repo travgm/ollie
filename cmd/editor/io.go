@@ -30,6 +30,11 @@ import (
 	"git.sr.ht/~travgm/ollie/search"
 )
 
+// Returns a main command and its parameters. 
+//
+// NOTE: the second string *param* can be a single string of multiple parameters
+// depending on what the main command is. It is up to that command to parse the
+// params accordingly.
 func parseCommandArgs(state *State) (string, string, error) {
 	c := strings.Split(state.command, " ")
 
@@ -44,6 +49,7 @@ func parseCommandArgs(state *State) (string, string, error) {
 	return cmd, param, nil
 }
 
+// Executes a given string to the system shell
 func shellCommand(command string) ([]byte, error) {
 	if len(command) < 1 {
 		return nil, fmt.Errorf("no command specified to run")
@@ -58,6 +64,11 @@ func shellCommand(command string) ([]byte, error) {
 
 }
 
+// This will delete the last line from the buffer and if there is a valid file
+// handle it will delete the last line from the file as well. This later might
+// be changed to just delete it from the buffer as the buffer is not written
+// to the file until the user types "w" so we could potentially remove a line
+// that the user would want in the file.
 func deleteLastLine(state *State) (int, error) {
 	line := strconv.Itoa(len(state.ollie.Lines))
 	if state.ollie.FileHandle != nil {
@@ -71,7 +82,8 @@ func deleteLastLine(state *State) (int, error) {
 	return state.ollie.LineCount + 1, nil
 }
 
-// Save words into state line buffer
+// Retrieves words from the user and appended to the ollie line buffer. We 
+// update some of the stats on the file after the user types a line.
 func getWords(state *State) error {
 	if state == nil {
 		return fmt.Errorf("GetWords Error. State is null\n")
@@ -117,6 +129,8 @@ func searchLinesBuffer(state *State, text string) (bool, error) {
 	return found, nil
 }
 
+// Writes the ollie line buffer to a specified file, If no file is given it then writes it to
+// the ollie.junk file
 func writeToDisk(state *State, param string) error {
 	if param != "" {
 		state.ollie.Name = param
@@ -171,3 +185,5 @@ func getSpellcheckSuggestions(state *State) error {
 
 	return nil
 }
+
+
