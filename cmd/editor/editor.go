@@ -34,7 +34,6 @@ import (
 
 	"git.sr.ht/~travgm/ollie/conf"
 	"git.sr.ht/~travgm/ollie/olliefile"
-	"git.sr.ht/~travgm/ollie/spellcheck"
 	"git.sr.ht/~travgm/ollie/version"
 )
 
@@ -45,6 +44,7 @@ import (
 // command should only be one of the valid editor const commands
 type State struct {
 	channels  Channels
+	dictionary string
 	command   string
 	wordInput *bufio.Scanner
 	ollie     *olliefile.File
@@ -91,7 +91,7 @@ func execIoCommand(state *State) {
 		switch param {
 		case "on":
 			if !state.channels.SpellRunning {
-				go execSpellchecker(&state.channels)
+				go execSpellchecker(&state.channels, spellFile)
 			} else if state.channels.SpellRunning && !state.channels.ShouldSpellcheck {
 				state.channels.ShouldSpellcheck = true
 			}

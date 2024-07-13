@@ -23,31 +23,33 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"errors"
 	"os/exec"
 	"strconv"
 	"strings"
 
 	"git.sr.ht/~travgm/ollie/search"
-	"git.sr.ht/~travgm/ollie/spellcheck"
+        "git.sr.ht/~travgm/ollie/spellcheck"
 )
 
 type Channels struct {
-       // This can be turned on and off to disable spellchecking
-       ShouldSpellcheck bool
+	// This can be turned on and off to disable spellchecking
+	ShouldSpellcheck bool
 
-       // This is only set when the go routine is running
-       SpellRunning     bool  
-       
-       // The minimum amount of characters a line must have before we send it to the spellchecker
-       CheckMin         int
+	// This is only set when the go routine is running
+	SpellRunning bool
 
-       // Spellcheck send/receive channels
-       Spelling         chan []string   
-       Spellres         chan []string
-       Done             chan []string
+	// The minimum amount of characters a line must have before we send it to the spellchecker
+	CheckMin int
+
+	// Spellcheck send/receive channels
+	Spelling chan []string
+	Spellres chan []string
+	Done     chan string
 }
 
-// Returns a main command and its parameters. 
+// Returns a main command and its parameters.
 //
 // NOTE: the second string *param* can be a single string of multiple parameters
 // depending on what the main command is. It is up to that command to parse the
@@ -65,6 +67,7 @@ func parseCommandArgs(state *State) (string, string, error) {
 
 	return cmd, param, nil
 }
+
 
 // Executes a given string to the system shell
 func shellCommand(command string) ([]byte, error) {
@@ -99,7 +102,7 @@ func deleteLastLine(state *State) (int, error) {
 	return state.ollie.LineCount + 1, nil
 }
 
-// Retrieves words from the user and appended to the ollie line buffer. We 
+// Retrieves words from the user and appended to the ollie line buffer. We
 // update some of the stats on the file after the user types a line.
 func getWords(state *State) error {
 	if state == nil {
@@ -203,47 +206,47 @@ func getSpellcheckSuggestions(state *State) error {
 	return nil
 }
 
-// Go routine to handle spellchecking 
-// Dictionary is hardcoded for now until we get config working 
-func execSpellchecker(channel Channels) { 
-        dict := spellcheck.Dict{MaxSuggest: 3} 
-	err := dict.LoadFromFile(filePath) 
-	if errors.Is(err, os.ErrNotExist) { 
-		// If the user supplied dictionary is not found then we try the default 
-		// location found on most *nix os's 
-		// 
-		// We dont worry about it if this cant load because then the spellchecker 
-		// just returns that there is no suggestion for the word 
-		fmt.Printf("dictionary file %s not found trying default\n", filePath) 
-		err := dict.LoadFromFile("/usr/share/dict/words") 
-		if errors.Is(err, os.ErrNotExist) { 
-			fmt.Printf("default dictionary not found. Please specify a dictionary to use spellchecking\n") 
-			channel.ShouldSpellcheck = false 
-			channel.SpellRunning = false 
-			return 
-		} 
-	} 
+// Go routine to handle spellchecking
+// Dictionary is hardcoded for now until we get config working
+func execSpellchecker(channel *Channels, filePath string) {
+	dict, err := spellcheck.NewDict(filePath)
+	if errors.Is(err, os.ErrNotExist) {
+		// If the user supplied dictionary is not found then we try the default
+		// location found on most *nix os's
+		//
+		// We dont worry about it if this cant load because then the spellchecker
+		// just returns that there is no suggestion for the word
+		fmt.Printf("dictionary file %s not found trying default\n", filePath)
+		dict, err = spellcheck.NewDict("/usr/share/dict/words")
+		if errors.Is(err, os.ErrNotExist) {
+			fmt.Printf("default dictionary not found. Please specify a dictionary to use spellchecking\n")
+			channel.ShouldSpellcheck = false
+			channel.SpellRunning = false
+			return
+		}
+	}
 
-	channel.SpellRunning = true 
+	dict.MaxSuggest = 3
+	channel.SpellRunning = true
 
-	for { 
-		select { 
-			// We received a message to the spellchecker. We spell check the slice 
-			// and send back a slice that has suggestions. 
-			case words, ok := <-channel.Spelling: 
-			if ok { 
-				var suggestion []string 
-				for _, word := range words { 
-					vals, err := dict.CheckWord(word) 
-					if err != nil || len(vals) < 1 { 
-						continue 
-					} 
-					suggestion = append(suggestion, vals...) 
-				} 
-				channel.Spellres <- suggestion 
-			} 
-			case <-channel.Done: 
-			return 
-		} 
-	} 
+	for {
+		select {
+		// We received a message to the spellchecker. We spell check the slice
+		// and send back a slice that has suggestions.
+		case words, ok := <-channel.Spelling:
+			if ok {
+				var suggestion []string
+				for _, word := range words {
+					vals, err := dict.Lookup(word)
+					if err != nil || len(vals) < 1 {
+						continue
+					}
+					suggestion = append(suggestion, vals...)
+				}
+				channel.Spellres <- suggestion
+			}
+		case <-channel.Done:
+			return
+		}
+	}
 }
