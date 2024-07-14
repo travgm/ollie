@@ -30,7 +30,7 @@ import (
 	"strings"
 
 	"git.sr.ht/~travgm/ollie/search"
-        "git.sr.ht/~travgm/ollie/spellcheck"
+  "git.sr.ht/~travgm/ollie/spellcheck"
 )
 
 type Channels struct {
@@ -204,6 +204,23 @@ func getSpellcheckSuggestions(state *State) error {
 	}
 
 	return nil
+}
+
+// Show the help menu inside the editor so we can see the commands and
+// what they do.
+func showHelpMenu() {
+    fmt.Println("Help Menu:")
+    fmt.Printf("%s\t%s\n", WRITE_FILE, "Write file")
+    fmt.Printf("%s\t%s\n", APPEND, "Append to file")
+    fmt.Printf("%s\t%s\n", FILE_INFO, "File information")
+    fmt.Printf("%s\t%s\n", SPELLCHECK, "Turn spellchecking on/off")
+    fmt.Printf("%s\t%s\n", FIX_LINE, "Fix line")
+    fmt.Printf("%s\t%s\n", EXEC_CMD, "Execute command")
+    fmt.Printf("%s\t%s\n", QUIT_EDITOR, "Quit editor")
+    fmt.Printf("%s\t%s\n", DEL_LAST_LINE, "Delete last line")
+    fmt.Printf("%s\t%s\n", SEARCH_TEXT, "Search text")
+    fmt.Printf("%s\t%s\n", COMMAND_MODE, "Command mode")
+    fmt.Printf("%s\t%s\n", HELP, "Help") 
 }
 
 // Go routine to handle spellchecking

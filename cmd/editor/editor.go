@@ -1,6 +1,6 @@
 // MIT License
 //
-// Copyright (c) 2024 Travis Montoya and the ollie contributors
+// # Copyright (c) 2024 Travis Montoya and the ollie contributors
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -43,12 +43,12 @@ import (
 //
 // command should only be one of the valid editor const commands
 type State struct {
-	channels  Channels
+	channels   Channels
 	dictionary string
-	command   string
-	wordInput *bufio.Scanner
-	ollie     *olliefile.File
-	conf      *conf.Settings
+	command    string
+	wordInput  *bufio.Scanner
+	ollie      *olliefile.File
+	conf       *conf.Settings
 }
 
 // Editor commands
@@ -63,6 +63,7 @@ const (
 	DEL_LAST_LINE = "d"
 	SEARCH_TEXT   = "s"
 	COMMAND_MODE  = "."
+	HELP          = "h"
 )
 
 // Checks state.command and runs the proper routines for it
@@ -132,6 +133,8 @@ func execIoCommand(state *State) {
 		if err != nil {
 			fmt.Println(err)
 		}
+	case HELP:
+		showHelpMenu()
 	default:
 		fmt.Println("unknown command")
 	}
@@ -210,7 +213,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	
+
 	if state.channels.ShouldSpellcheck {
 		go execSpellchecker(&state.channels, *spellFlag)
 	}
@@ -221,7 +224,7 @@ func run() error {
 			fmt.Println(err)
 			close(state.channels.Done)
 			return err
-			}
+		}
 		fmt.Print("@ ")
 		state.wordInput.Scan()
 		state.command = state.wordInput.Text()
