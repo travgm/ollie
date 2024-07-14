@@ -65,6 +65,7 @@ const (
 	COMMAND_MODE  = "."
 	HELP          = "h"
 	REG_EXP       = "/"
+	READ_IN_FILE  = "r"
 )
 
 // Checks state.command and runs the proper routines for it
@@ -136,6 +137,11 @@ func execIoCommand(state *State) {
 		}
 	case REG_EXP:
 		err := searchWithRegExp(state, param)
+		if err != nil {
+			fmt.Println(err)
+		}
+	case READ_IN_FILE:
+		err := readInFile(state, param)
 		if err != nil {
 			fmt.Println(err)
 		}

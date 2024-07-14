@@ -22,6 +22,7 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"os"
@@ -136,6 +137,30 @@ func getWords(state *State) error {
 		state.ollie.WordCount += len(strings.Split(" ", state.wordInput.Text()))
 		fmt.Printf("%d:%d\n", state.ollie.LineCount, len(state.wordInput.Text()))
 	}
+	return nil
+}
+
+func readInFile(state *State, filePath string) error {
+	if filePath == "" {
+		return fmt.Errorf("No file specified")
+	}
+	file, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		state.ollie.Lines = append(state.ollie.Lines, scanner.Text())
+		state.ollie.LineCount += 1
+		state.ollie.WordCount += len(strings.Split(" ", scanner.Text()))
+	}
+
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
