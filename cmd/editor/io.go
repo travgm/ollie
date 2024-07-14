@@ -264,17 +264,19 @@ func getSpellcheckSuggestions(state *State) error {
 // what they do.
 func showHelpMenu() {
 	fmt.Println("Help Menu:")
-	fmt.Printf("%s\t%s\n", WRITE_FILE, "Write file")
-	fmt.Printf("%s\t%s\n", APPEND, "Append to file")
-	fmt.Printf("%s\t%s\n", FILE_INFO, "File information")
-	fmt.Printf("%s\t%s\n", SPELLCHECK, "Turn spellchecking on/off")
-	fmt.Printf("%s\t%s\n", FIX_LINE, "Fix line")
-	fmt.Printf("%s\t%s\n", EXEC_CMD, "Execute command")
-	fmt.Printf("%s\t%s\n", QUIT_EDITOR, "Quit editor")
-	fmt.Printf("%s\t%s\n", DEL_LAST_LINE, "Delete last line")
-	fmt.Printf("%s\t%s\n", SEARCH_TEXT, "Search text")
-	fmt.Printf("%s\t%s\n", COMMAND_MODE, "Command mode")
-	fmt.Printf("%s\t%s\n", HELP, "Help")
+	fmt.Printf("%s\t\t%s\n", WRITE_FILE, "Write file")
+	fmt.Printf("%s\t\t%s\n", APPEND, "Append to file")
+	fmt.Printf("%s\t\t%s\n", FILE_INFO, "File information")
+	fmt.Printf("%s\t\t%s\n", SPELLCHECK, "Turn spellchecking on/off")
+	fmt.Printf("%s\t\t%s\n", FIX_LINE, "Fix line")
+	fmt.Printf("%s\t\t%s\n", EXEC_CMD, "Execute command")
+	fmt.Printf("%s\t\t%s\n", QUIT_EDITOR, "Quit editor")
+	fmt.Printf("%s\t\t%s\n", DEL_LAST_LINE, "Delete last line")
+	fmt.Printf("%s\t\t%s\n", SEARCH_TEXT, "Search text")
+	fmt.Printf("%s\t\t%s\n", COMMAND_MODE, "Command mode")
+	fmt.Printf("%sregexp%s\t%s\n", REG_EXP, REG_EXP, "Search buffer with regular expression regexp")
+	fmt.Printf("%s\t\t%s\n", READ_IN_FILE, "Read in a file and append it to the current buffer")
+	fmt.Printf("%s\t\t%s\n", HELP, "Help")
 }
 
 // Go routine to handle spellchecking

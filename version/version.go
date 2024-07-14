@@ -59,6 +59,6 @@ func DisplayAbout() {
 	fmt.Print(colorGreen)
 	fmt.Println(logo)
 	fmt.Print(resetColor)
-	fmt.Printf("\t\t     Ollie Editor v%d.%d %s\n", MAJOR, MINOR, REL)
-	fmt.Println("\t\t       travis@travgm.org\n")
+	fmt.Printf("\t\t    Ollie Editor v%d.%d %s\n", MAJOR, MINOR, REL)
+	fmt.Println("\t\t      travis@travgm.org\n")
 }
