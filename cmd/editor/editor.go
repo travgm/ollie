@@ -89,7 +89,7 @@ func execIoCommand(state *State) {
 			spellFile = params[1]
 		}
 
-		switch param {
+		switch params[0] {
 		case "on":
 			if !state.channels.SpellRunning {
 				go execSpellchecker(&state.channels, spellFile)
@@ -164,10 +164,11 @@ func initEditor(filename string, spell string) (State, error) {
 	}
 
 	state := State{
-		channels:  spChannels,
-		wordInput: bufio.NewScanner(os.Stdin),
-		ollie:     of,
-		conf:      config,
+		channels:   spChannels,
+		dictionary: spell,
+		wordInput:  bufio.NewScanner(os.Stdin),
+		ollie:      of,
+		conf:       config,
 	}
 
 	return state, nil
@@ -201,12 +202,6 @@ func run() error {
 	if *aboutFlag {
 		version.DisplayAbout()
 		return nil
-	}
-
-	if flag.NArg() > 1 {
-		printUsage()
-		return fmt.Errorf("incorrect number of arguments")
-
 	}
 
 	state, err := initEditor(flag.Arg(0), *spellFlag)

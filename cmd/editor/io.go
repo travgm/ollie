@@ -244,6 +244,7 @@ func execSpellchecker(channel *Channels, filePath string) {
 
 	dict.MaxSuggest = 3
 	channel.SpellRunning = true
+	channel.ShouldSpellcheck = true
 
 	for {
 		select {
