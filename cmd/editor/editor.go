@@ -64,6 +64,7 @@ const (
 	SEARCH_TEXT   = "s"
 	COMMAND_MODE  = "."
 	HELP          = "h"
+	REG_EXP       = "/"
 )
 
 // Checks state.command and runs the proper routines for it
@@ -130,6 +131,11 @@ func execIoCommand(state *State) {
 		}
 	case WRITE_FILE:
 		err := writeToDisk(state, param)
+		if err != nil {
+			fmt.Println(err)
+		}
+	case REG_EXP:
+		err := searchWithRegExp(state, param)
 		if err != nil {
 			fmt.Println(err)
 		}

@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -55,6 +56,15 @@ type Channels struct {
 // depending on what the main command is. It is up to that command to parse the
 // params accordingly.
 func parseCommandArgs(state *State) (string, string, error) {
+	// All other commands are space separated, regular expressions to search the file are not
+	if strings.HasPrefix(state.command, REG_EXP) && strings.HasSuffix(state.command, REG_EXP) {
+		reg := strings.Trim(state.command, REG_EXP)
+		cmd := REG_EXP
+		param := reg
+
+		return cmd, param, nil
+	}
+
 	c := strings.Split(state.command, " ")
 
 	cmdLen := len(c)
@@ -146,6 +156,26 @@ func searchLinesBuffer(state *State, text string) (bool, error) {
 		fmt.Printf("%s not found in buffer\n", text)
 	}
 	return found, nil
+}
+
+// This will compile a regular expression and search each line with the regular
+// expression.
+func searchWithRegExp(state *State, regex string) error {
+	if regex == "" {
+		return fmt.Errorf("no regular expression specified")
+	}
+
+	r, err := regexp.Compile(regex)
+	if err != nil {
+		return err
+	}
+
+	for i, line := range state.ollie.Lines {
+		if s := r.FindString(line); s != "" {
+			fmt.Printf("%d:%s\n", i+1, line)
+		}
+	}
+	return nil
 }
 
 // Writes the ollie line buffer to a specified file, If no file is given it then writes it to
