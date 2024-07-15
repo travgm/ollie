@@ -165,10 +165,8 @@ func initEditor(filename string, spell string) (State, error) {
 		return State{}, nil
 	}
 
-	shouldSpell := len(spell) > 0
-
 	spChannels := Channels{
-		ShouldSpellcheck: shouldSpell,
+		ShouldSpellcheck: len(spell) > 0,
 		CheckMin:         3,
 		Spelling:         make(chan []string, 1),
 		Spellres:         make(chan []string, 1),
@@ -225,18 +223,21 @@ func run() error {
 		go execSpellchecker(&state.channels, *spellFlag)
 	}
 
+	defer close(state.channels.Done)
 	for {
 		err := getWords(&state)
 		if err != nil {
-			fmt.Println(err)
-			close(state.channels.Done)
 			return err
 		}
 		fmt.Print("@ ")
-		state.wordInput.Scan()
+		if !state.wordInput.Scan() {
+			return nil
+		}
+		if err := state.wordInput.Err(); err != nil {
+			return err
+		}
 		state.command = state.wordInput.Text()
 		if state.command == QUIT_EDITOR {
-			close(state.channels.Done)
 			break
 		}
 		execIoCommand(&state)
