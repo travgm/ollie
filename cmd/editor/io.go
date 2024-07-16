@@ -66,7 +66,7 @@ func parseCommandArgs(state *State) (string, string, error) {
 		return cmd, param, nil
 	}
 
-	c := strings.Fields(state.command, " ")
+	c := strings.Fields(state.command)
 
 	cmdLen := len(c)
 	cmd := c[0]
@@ -84,7 +84,7 @@ func shellCommand(command string) ([]byte, error) {
 	if len(command) < 1 {
 		return nil, fmt.Errorf("no command specified to run")
 	}
-	param := strings.Fields(command, " ")
+	param := strings.Fields(command)
 	scmd := exec.Command(param[0], param[1:]...)
 	res, err := scmd.CombinedOutput()
 	if err != nil {
