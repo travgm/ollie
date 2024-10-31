@@ -1,3 +1,3 @@
-module git.sr.ht/~travgm/ollie
+module github.com/travgm/ollie
 
-go 1.22.2
+go 1.22
